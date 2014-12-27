@@ -19,7 +19,7 @@ def __get_irc_config():
     """Get a configuration dictionary for IRC specific settings."""
     channel_list = getenv("PEARBOT_IRC_CHANNELS")
     channels = channel_list.split(";")
-    use_ssl = bool(getenv("PEARBOT_IRC_SSL", True))
+    use_ssl = bool(getenv("PEARBOT_IRC_SSL"))
 
     return {"hostname": getenv("PEARBOT_IRC_HOSTNAME"),
             "port": getenv("PEARBOT_IRC_PORT", 6697),
