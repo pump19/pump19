@@ -12,22 +12,21 @@ Copyright (c) 2014 Twisted Pear <pear at twistedpear dot at>
 See the file LICENSE for copying permission.
 """
 
-from os import getenv
+from os import environ
 
 
 def __get_irc_config():
     """Get a configuration dictionary for IRC specific settings."""
-    channel_list = getenv("PEARBOT_IRC_CHANNELS")
+    channel_list = environ["PEARBOT_IRC_CHANNELS"]
     channels = channel_list.split(";")
-    use_ssl = bool(getenv("PEARBOT_IRC_SSL"))
 
-    return {"hostname": getenv("PEARBOT_IRC_HOSTNAME"),
-            "port": getenv("PEARBOT_IRC_PORT", 6697),
-            "ssl": use_ssl,
-            "password": getenv("PEARBOT_IRC_PASSWORD"),
-            "nickname": getenv("PEARBOT_IRC_NICKNAME", "PearBot"),
-            "username": getenv("PEARBOT_IRC_USERNAME", "pearbot"),
-            "realname": getenv("PEARBOT_IRC_REALNAME", "PearBot IRC Bot"),
+    return {"hostname": environ["PEARBOT_IRC_HOSTNAME"],
+            "port": environ["PEARBOT_IRC_PORT"],
+            "ssl": True if "PEARBOT_IRC_SSL" in environ else False,
+            "password": environ.get("PEARBOT_IRC_PASSWORD"),
+            "nickname": environ["PEARBOT_IRC_NICKNAME"],
+            "username": environ["PEARBOT_IRC_USERNAME"],
+            "realname": environ["PEARBOT_IRC_REALNAME"],
             "channels": channels}
 
 
