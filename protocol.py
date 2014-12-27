@@ -65,7 +65,8 @@ class Protocol(object):
     @asyncio.coroutine
     def join(self):
         """Join configured channels after registering with the network."""
-        self.logger.info("Joining channels.")
+        self.logger.info("Joining channels {0}.".format(
+            ",".join(self.channels)))
         for channel in self.channels:
             self.irc.send("JOIN", channel=channel)
 
