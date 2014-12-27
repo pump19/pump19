@@ -30,6 +30,12 @@ def __get_irc_config():
             "channels": channels}
 
 
+def __get_cmd_config():
+    """Get a configuration dictionary for a CommandHandler instance."""
+
+    return {"prefix": environ.get("PEARBOT_CMD_PREFIX", "!")}
+
+
 def get_config(component):
     """
     Get a configuration dictionary for a specific component.
@@ -38,6 +44,8 @@ def get_config(component):
     """
     if component == "irc":
         return __get_irc_config()
+    elif component == "cmd":
+        return __get_cmd_config()
 
     # we don't know that config
     raise KeyError("No such component: {0}".format(component))
