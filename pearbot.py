@@ -12,6 +12,7 @@ See the file LICENSE for copying permission.
 """
 
 import asyncio
+import command
 import config
 import logging
 import protocol
@@ -28,6 +29,10 @@ def main():
     loop = asyncio.get_event_loop()
     client_config = config.get_config("irc")
     client = protocol.Protocol(**client_config)
+
+    cmdhdl_config = config.get_config("cmd")
+    # we don't need to remember this instance
+    command.CommandHandler(client, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
