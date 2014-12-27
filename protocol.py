@@ -42,10 +42,23 @@ class Protocol(object):
                                  kwargs.get("port"),
                                  ssl=kwargs.get("ssl"))
 
-        self.irc.on("PING")(self.keepalive)
-        self.irc.on("CLIENT_CONNECT")(self.register)
-        self.irc.on("CLIENT_DISCONNECT")(self.reconnect)
-        self.irc.on("RPL_WELCOME")(self.join)
+        self.event_handler("PING")(self.keepalive)
+        self.event_handler("CLIENT_CONNECT")(self.register)
+        self.event_handler("CLIENT_DISCONNECT")(self.reconnect)
+        self.event_handler("RPL_WELCOME")(self.join)
+
+    def event_handler(self, command):
+        """Register an event handler."""
+        return self.irc.on(command)
+
+    @asyncio.coroutine
+    def privmsg(self, target, message):
+        """
+        Send a message to target (nick or channel).
+        This command is rate limited to once a second.
+        """
+        self.irc.send("PRIVMSG", target=target, message=message)
+        yield from asyncio.sleep(1)
 
     @asyncio.coroutine
     def keepalive(self, message):
