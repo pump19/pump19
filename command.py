@@ -39,13 +39,12 @@ class CommandHandler(object):
             limiter = self
 
             @functools.wraps(func)
+            @asyncio.coroutine
             def wrapper(self, *args, **kwargs):
                 now = time.monotonic()
                 if (now - limiter.last) > limiter.delay:
                     limiter.last = now
-                    return func(self, *args, **kwargs)
-                else:
-                    return None
+                    yield from func(self, *args, **kwargs)
             return wrapper
 
     def __init__(self, protocol, **kwargs):
@@ -76,14 +75,16 @@ class CommandHandler(object):
         if target == self.protocol.nickname:
             target = nick
 
+        yield from self.protocol.privmsg(target, "Got message: {0}.".format(message))
+
         # check if we can handle that command
         cmd_name = "handle_command_{0}".format(cmd[1:])
         handle_command = getattr(self, cmd_name, None)
         if handle_command and callable(handle_command):
             yield from handle_command(target, nick, args)
 
+    @rate_limit(10)
     @asyncio.coroutine
-    @rate_limit()
     def handle_command_patreon(self, target, nick, args):
         """
         Handler !patreon command.
