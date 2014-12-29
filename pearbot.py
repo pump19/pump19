@@ -18,8 +18,8 @@ import logging
 import protocol
 import signal
 
-LOG_FORMAT = "%(asctime)-15s %(name)-10s %(levelname)-8s %(message)s"
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+LOG_FORMAT = "{asctime} [{process}] {levelname}({name}): {message}"
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, style="{")
 
 
 def main():
