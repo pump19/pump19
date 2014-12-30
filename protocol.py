@@ -24,6 +24,7 @@ class Protocol(object):
     """IRC client class."""
     logger = logging.getLogger("protocol")
     restart = True
+    msglock = asyncio.Lock()
 
     def __init__(self, **kwargs):
         """
@@ -55,10 +56,11 @@ class Protocol(object):
     def privmsg(self, target, message):
         """
         Send a message to target (nick or channel).
-        This command is rate limited to once a second.
+        This method is rate limited to once a second.
         """
-        self.irc.send("PRIVMSG", target=target, message=message)
-        yield from asyncio.sleep(1)
+        with (yield from self.msglock):
+            self.irc.send("PRIVMSG", target=target, message=message)
+            yield from asyncio.sleep(1)
 
     @asyncio.coroutine
     def keepalive(self, message):
