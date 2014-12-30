@@ -80,7 +80,7 @@ class CommandHandler(object):
         if handle_command and callable(handle_command):
             yield from handle_command(target, nick, args)
 
-    @rate_limit(10)
+    @rate_limit()
     @asyncio.coroutine
     def handle_command_patreon(self, target, nick, args):
         """
