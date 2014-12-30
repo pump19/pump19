@@ -36,15 +36,14 @@ class CommandHandler(object):
             self.delay = delay
 
         def __call__(self, func):
-            limiter = self
 
             @functools.wraps(func)
             @asyncio.coroutine
-            def wrapper(self, *args, **kwargs):
+            def wrapper(*args, **kwargs):
                 now = time.monotonic()
-                if (now - limiter.last) > limiter.delay:
-                    limiter.last = now
-                    yield from func(self, *args, **kwargs)
+                if (now - self.last) > self.delay:
+                    self.last = now
+                    yield from func(*args, **kwargs)
             return wrapper
 
     def __init__(self, protocol, **kwargs):
