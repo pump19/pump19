@@ -75,8 +75,6 @@ class CommandHandler(object):
         if target == self.protocol.nickname:
             target = nick
 
-        yield from self.protocol.privmsg(target, "Got message: {0}.".format(message))
-
         # check if we can handle that command
         cmd_name = "handle_command_{0}".format(cmd[1:])
         handle_command = getattr(self, cmd_name, None)
