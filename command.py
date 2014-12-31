@@ -13,11 +13,14 @@ See the file LICENSE for copying permission.
 import aiohttp
 import asyncio
 import bs4
+import datetime
+import feedparser
 import functools
 import logging
 import time
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
+LRR_RSS_URL = "http://feeds.feedburner.com/Loadingreadyrun"
 
 
 class CommandHandler(object):
@@ -100,3 +103,21 @@ class CommandHandler(object):
             nof_patrons, total_earnings, PATREON_URL)
 
         yield from self.protocol.privmsg(target, patreon_msg)
+
+    @rate_limit()
+    @asyncio.coroutine
+    def handle_command_feed(self, target, nick, args):
+        """
+        Handler !feed command.
+        Post the most recent video RSS feed item.
+        """
+        feed_req = yield from aiohttp.client.request(
+            "get", LRR_RSS_URL, headers={"Accept": "application/rss+xml"})
+        feed_body = yield from feed_req.text()
+        feed = feedparser.parse(feed_body)
+        latest = feed.entries[0]
+        time = datetime.datetime(*latest.published_parsed[:6])
+
+        feed_msg = "LRR Video Feed: {0} ({1}) [{2}]".format(
+            latest.title, latest.id, time.isoformat(" "))
+        yield from self.protocol.privmsg(target, feed_msg)
