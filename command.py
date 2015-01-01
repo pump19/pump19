@@ -49,11 +49,11 @@ class CommandHandler(object):
                     yield from func(*args, **kwargs)
             return wrapper
 
-    def __init__(self, protocol, **kwargs):
+    def __init__(self, protocol, *, prefix="!"):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
-        self.prefix = kwargs["prefix"]
+        self.prefix = prefix
         self.protocol = protocol
         self.protocol.event_handler("PRIVMSG")(self.handle_privmsg)
 

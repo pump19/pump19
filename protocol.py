@@ -26,22 +26,23 @@ class Protocol(object):
     restart = True
     msglock = asyncio.Lock()
 
-    def __init__(self, **kwargs):
+    def __init__(self, *,
+                 hostname="localhost", port=6667, ssl=False,
+                 nickname=None, username=None, realname=None, password=None,
+                 channels=[]):
         """
         Initialize the actual IRC client and register callback methods.
         """
         self.logger.info("Creating Protocol instance.")
 
-        self.nickname = kwargs.get("nickname")
-        self.password = kwargs.get("password")
-        self.username = kwargs.get("username")
-        self.realname = kwargs.get("realname")
-        self.channels = kwargs.get("channels")
+        self.nickname = nickname
+        self.password = password
+        self.username = username
+        self.realname = realname
+        self.channels = channels
 
         self.logger.debug("Registering callback methods.")
-        self.irc = bottom.Client(kwargs.get("hostname"),
-                                 kwargs.get("port"),
-                                 ssl=kwargs.get("ssl"))
+        self.irc = bottom.Client(hostname, port, ssl=ssl)
 
         self.event_handler("PING")(self.keepalive)
         self.event_handler("CLIENT_CONNECT")(self.register)
