@@ -18,7 +18,8 @@ import logging
 import time
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
-LRR_RSS_URL = "http://feeds.feedburner.com/Loadingreadyrun"
+BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
+                 "loadingreadyrun/videos?limit=1&broadcasts=true")
 
 
 class CommandHandler(object):
@@ -107,13 +108,28 @@ class CommandHandler(object):
     @asyncio.coroutine
     def handle_command_latest(self, target, nick, args):
         """
-        Handle !latest [video|podcast] command.
-        Post the most recent video RSS feed item.
+        Handle !latest [video|podcast|broadcast] command.
+        Post the most recent RSS feed item or Twitch.tv broadcast.
         """
-        feed = args if args and args in ["video", "podcast"] else "video"
+        feed = "video"
+        if args and args in ["video", "podcast", "broadcast"]:
+            feed = args
 
-        # start a manual update
-        yield from self.feed.update(feed)
+        # broadcasts are updated here
+        if feed == "broadcast":
+            broadcast_req = yield from aiohttp.client.request(
+                "get", BROADCAST_URL,
+                headers={"Accept": "application/vnd.twitchtv.v3+json"})
+            broadcast = yield from broadcast_req.json()
+            video = broadcast["videos"][0]
 
-        # let the feed parser announce it
-        yield from self.feed.announce(feed, target=target)
+            broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(
+                video["title"], video["url"], video["recorded_at"])
+
+            yield from self.client.privmsg(target, broadcast_msg)
+        else:
+            # start a manual update
+            yield from self.feed.update(feed)
+
+            # let the feed parser announce it
+            yield from self.feed.announce(feed, target=target)
