@@ -21,7 +21,7 @@ def __get_irc_config():
     channels = channel_list.split(";")
 
     return {"hostname": environ["PEARBOT_IRC_HOSTNAME"],
-            "port": environ["PEARBOT_IRC_PORT"],
+            "port": int(environ["PEARBOT_IRC_PORT"]),
             "ssl": True if "PEARBOT_IRC_SSL" in environ else False,
             "password": environ.get("PEARBOT_IRC_PASSWORD"),
             "nickname": environ["PEARBOT_IRC_NICKNAME"],
@@ -36,6 +36,12 @@ def __get_cmd_config():
     return {"prefix": environ.get("PEARBOT_CMD_PREFIX", "!")}
 
 
+def __get_rss_config():
+    """Get a configuration dictionary for a LRRFeedParser instance."""
+
+    return {"delay": int(environ.get("PEARBOT_RSS_DELAY", 300))}
+
+
 def get_config(component):
     """
     Get a configuration dictionary for a specific component.
@@ -46,6 +52,8 @@ def get_config(component):
         return __get_irc_config()
     elif component == "cmd":
         return __get_cmd_config()
+    elif component == "rss":
+        return __get_rss_config()
 
     # we don't know that config
     raise KeyError("No such component: {0}".format(component))
