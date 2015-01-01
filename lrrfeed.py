@@ -126,7 +126,7 @@ class LRRFeedParser(object):
 
         entry_msg = "{0}: {1} ({2}) [{3}Z]".format(
             RSS_FEEDS[feed]["title"],
-            entry["title"], entry["url"], entry["time"].isoformat(" "))
+            entry["title"], entry["url"], entry["time"].isoformat())
 
         if target:
             yield from self.client.privmsg(target, entry_msg)
