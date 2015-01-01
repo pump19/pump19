@@ -13,8 +13,6 @@ See the file LICENSE for copying permission.
 import aiohttp
 import asyncio
 import bs4
-import datetime
-import feedparser
 import functools
 import logging
 import time
@@ -49,13 +47,14 @@ class CommandHandler(object):
                     yield from func(*args, **kwargs)
             return wrapper
 
-    def __init__(self, protocol, *, prefix="!"):
+    def __init__(self, client, feed, *, prefix="!"):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
         self.prefix = prefix
-        self.protocol = protocol
-        self.protocol.event_handler("PRIVMSG")(self.handle_privmsg)
+        self.client = client
+        self.feed = feed
+        self.client.event_handler("PRIVMSG")(self.handle_privmsg)
 
     @asyncio.coroutine
     def handle_privmsg(self, nick, target, message):
@@ -74,7 +73,7 @@ class CommandHandler(object):
         self.logger.info("Got command {0} from {1}.".format(cmd, nick))
 
         # is this a query? if so, send messages to nick instead
-        if target == self.protocol.nickname:
+        if target == self.client.nickname:
             target = nick
 
         # check if we can handle that command
@@ -87,7 +86,7 @@ class CommandHandler(object):
     @asyncio.coroutine
     def handle_command_patreon(self, target, nick, args):
         """
-        Handler !patreon command.
+        Handle !patreon command.
         Post the number of patrons and the total earnings per month.
         """
         patreon_req = yield from aiohttp.client.request("get", PATREON_URL)
@@ -102,22 +101,19 @@ class CommandHandler(object):
         patreon_msg = "{0} patrons for a total of ${1} per month. {2}".format(
             nof_patrons, total_earnings, PATREON_URL)
 
-        yield from self.protocol.privmsg(target, patreon_msg)
+        yield from self.client.privmsg(target, patreon_msg)
 
     @rate_limit()
     @asyncio.coroutine
-    def handle_command_feed(self, target, nick, args):
+    def handle_command_latest(self, target, nick, args):
         """
-        Handler !feed command.
+        Handle !latest [video|podcast] command.
         Post the most recent video RSS feed item.
         """
-        feed_req = yield from aiohttp.client.request(
-            "get", LRR_RSS_URL, headers={"Accept": "application/rss+xml"})
-        feed_body = yield from feed_req.text()
-        feed = feedparser.parse(feed_body)
-        latest = feed.entries[0]
-        time = datetime.datetime(*latest.published_parsed[:6])
+        feed = args if args and args in ["video", "podcast"] else "video"
 
-        feed_msg = "LRR Video Feed: {0} ({1}) [{2}]".format(
-            latest.title, latest.id, time.isoformat(" "))
-        yield from self.protocol.privmsg(target, feed_msg)
+        # start a manual update
+        yield from self.feed.update(feed)
+
+        # let the feed parser announce it
+        yield from self.feed.announce(feed, target=target)

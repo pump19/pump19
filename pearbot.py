@@ -15,6 +15,7 @@ import asyncio
 import command
 import config
 import logging
+import lrrfeed
 import protocol
 import signal
 
@@ -30,12 +31,17 @@ def main():
     client_config = config.get_config("irc")
     client = protocol.Protocol(**client_config)
 
+    feed_config = config.get_config("rss")
+    feed = lrrfeed.LRRFeedParser(client, **feed_config)
+    feed.start()
+
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, **cmdhdl_config)
+    command.CommandHandler(client, feed, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
+        feed.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
