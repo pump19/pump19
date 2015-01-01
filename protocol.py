@@ -57,11 +57,22 @@ class Protocol(object):
     def privmsg(self, target, message):
         """
         Send a message to target (nick or channel).
-        This method is rate limited to once a second.
+        This method is rate limited to one line per second.
         """
         with (yield from self.msglock):
             self.irc.send("PRIVMSG", target=target, message=message)
             yield from asyncio.sleep(1)
+
+    @asyncio.coroutine
+    def announce(self, message):
+        """
+        Send a message to all registered channels.
+        This method is rate limited to one line per second.
+        """
+        with (yield from self.msglock):
+            for channel in self.channels:
+                self.irc.send("PRIVMSG", target=channel, message=message)
+                yield from asyncio.sleep(1)
 
     @asyncio.coroutine
     def keepalive(self, message):
