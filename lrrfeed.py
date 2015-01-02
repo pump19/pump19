@@ -99,19 +99,21 @@ class LRRFeedParser(object):
             self.logger.info("Running update for RSS feed {0}.".format(feed))
 
             feed_url = RSS_FEEDS[feed]["url"]
-            latest_entry = yield from self.get_latest(feed_url)
-            if not self.updater[feed]["latest"]:
+            new_entry = yield from self.get_latest(feed_url)
+            old_entry = self.updater[feed]["latest"]
+
+            # remember latest entry
+            self.updater[feed]["latest"] = new_entry
+            self.updater[feed]["last"] = time.monotonic()
+
+            if not old_entry:
                 self.logger.info("Detected first entry for RSS feed "
                                  "{0}.".format(feed))
-            elif self.updater[feed]["latest"]["url"] != latest_entry["url"]:
+            elif old_entry["url"] != new_entry["url"]:
                 self.logger.info("Detected new entry for RSS feed "
                                  "{0}.".format(feed))
                 if announce:
                     yield from self.announce(feed)
-
-            # remember latest entry
-            self.updater[feed]["latest"] = latest_entry
-            self.updater[feed]["last"] = time.monotonic()
 
     @asyncio.coroutine
     def announce(self, feed, *, target=None):
