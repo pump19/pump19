@@ -15,7 +15,6 @@ import asyncio
 import datetime
 import feedparser
 import logging
-import time
 
 RSS_FEEDS = {
     "video": {"title": "LRR Video Feed",
@@ -34,19 +33,20 @@ class LRRFeedParser(object):
     logger = logging.getLogger("lrrfeed")
     updater = dict()
 
-    def __init__(self, client, *, delay=300):
+    def __init__(self, client, *, delay=300, loop=None):
         """Initialize the LRR RSS feed parser."""
         self.logger.info("LRRFeedParser(delay={0}) created.".format(delay))
 
         self.delay = delay
         self.client = client
+        self.loop = loop or asyncio.get_event_loop()
 
     def start(self):
         """Start automatic update tasks."""
         for feed in RSS_FEEDS.keys():
             if feed not in self.updater:
-                update_coro = self.auto_update(feed)
-                self.updater[feed] = {"task": asyncio.Task(update_coro),
+                coro = self.auto_update(feed)
+                self.updater[feed] = {"task": self.loop.create_task(coro),
                                       "lock": asyncio.Lock(),
                                       "last": 0.0,
                                       "latest": None}
@@ -71,7 +71,7 @@ class LRRFeedParser(object):
         try:
             while True:
                 # check if we were woken too early (e.g. after a manual update)
-                now = time.monotonic()
+                now = self.loop.time()
                 nxt = self.updater[feed]["last"] + self.delay
                 if nxt > now:
                     # make sure we sleep slightly longer than necessary
@@ -104,7 +104,7 @@ class LRRFeedParser(object):
 
             # remember latest entry
             self.updater[feed]["latest"] = new_entry
-            self.updater[feed]["last"] = time.monotonic()
+            self.updater[feed]["last"] = self.loop.time()
 
             if not old_entry:
                 self.logger.info("Detected first entry for RSS feed "
