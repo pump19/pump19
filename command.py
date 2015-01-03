@@ -15,7 +15,6 @@ import asyncio
 import bs4
 import functools
 import logging
-import time
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
 BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
@@ -33,16 +32,17 @@ class CommandHandler(object):
         """A decorator that suppresses method calls within a certain delay."""
         last = 0.0
 
-        def __init__(self, delay=30):
+        def __init__(self, *, delay=30, loop=None):
             """Initialize rate limiter with a default delay of 30."""
             self.delay = delay
+            self.loop = loop or asyncio.get_event_loop()
 
         def __call__(self, func):
 
             @functools.wraps(func)
             @asyncio.coroutine
             def wrapper(*args, **kwargs):
-                now = time.monotonic()
+                now = self.loop.time()
                 if (now - self.last) > self.delay:
                     self.last = now
                     yield from func(*args, **kwargs)
