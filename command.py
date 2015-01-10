@@ -90,7 +90,7 @@ class CommandHandler(object):
         Handle !patreon command.
         Post the number of patrons and the total earnings per month.
         """
-        patreon_req = yield from aiohttp.client.request("get", PATREON_URL)
+        patreon_req = yield from aiohttp.request("get", PATREON_URL)
         patreon_body = yield from patreon_req.text()
         patreon_soup = bs4.BeautifulSoup(patreon_body)
         tag_patrons = patreon_soup.find("div", id="totalPatrons")
@@ -117,7 +117,7 @@ class CommandHandler(object):
 
         # broadcasts are updated here
         if feed == "broadcast":
-            broadcast_req = yield from aiohttp.client.request(
+            broadcast_req = yield from aiohttp.request(
                 "get", BROADCAST_URL,
                 headers={"Accept": "application/vnd.twitchtv.v3+json"})
             broadcast = yield from broadcast_req.json()

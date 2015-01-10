@@ -141,7 +141,7 @@ class LRRFeedParser(object):
         logger = logging.getLogger("lrrfeed")
         logger.info("Retrieving latest entry for {0}.".format(feed_url))
 
-        feed_req = yield from aiohttp.client.request(
+        feed_req = yield from aiohttp.request(
             "get", feed_url, headers={"Accept": "application/rss+xml"})
         feed_body = yield from feed_req.text()
         feed = feedparser.parse(feed_body)
