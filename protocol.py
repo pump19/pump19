@@ -6,7 +6,7 @@ protocol.py
 
 Provides IRC client functionality based on the bottom module.
 
-Copyright (c) 2014 Twisted Pear <pear at twistedpear dot at>
+Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
 See the file LICENSE for copying permission.
 """
 

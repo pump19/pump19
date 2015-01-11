@@ -7,7 +7,7 @@ pearbot.py
 The PearBot IRC bot entry point.
 It sets up logging and starts up the IRC client.
 
-Copyright (c) 2014 Twisted Pear <pear at twistedpear dot at>
+Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
 See the file LICENSE for copying permission.
 """
 
