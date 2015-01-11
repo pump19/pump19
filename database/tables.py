@@ -19,3 +19,7 @@ METADATA = MetaData()
 Table("quote", METADATA,
       Column("qid", Integer, primary_key=True),
       Column("text", String, nullable=False))
+
+Table("moderator", METADATA,
+      Column("stream", String, primary_key=True),
+      Column("name", String, primary_key=True))
