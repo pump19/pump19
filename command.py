@@ -13,9 +13,12 @@ See the file LICENSE for copying permission.
 import aiohttp
 import asyncio
 import bs4
+import database
 import functools
 import logging
 import twitch
+
+from sqlalchemy.sql import select, func as sqlfunc
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
 
@@ -128,3 +131,125 @@ class CommandHandler(object):
 
             # let the feed parser announce it
             yield from self.feed.announce(feed, target=target)
+
+    @rate_limit()
+    @asyncio.coroutine
+    def handle_command_quote(self, target, nick, args):
+        """
+        Handle !quote [id] command.
+        Post either the specified or a random quote.
+        """
+        qid = int(args) if args and args.isdigit() else None
+
+        engine = yield from database.get_engine()
+        table = database.get_table("quote")
+
+        with (yield from engine) as conn:
+            query = table.select().limit(1)
+            if qid:
+                query = query.where(table.c.qid == qid)
+            else:
+                query = query.order_by(sqlfunc.random())
+
+            res = yield from conn.execute(query)
+            if not res.rowcount:
+                if qid:
+                    no_quote_msg = "Could not retrieve quote #{qid}.".format(
+                        qid=qid)
+                else:
+                    no_quote_msg = "Could not retrieve random quote."
+
+                yield from self.client.privmsg(target, no_quote_msg)
+            else:
+                quote = yield from res.first()
+                quote_msg = "Quote #{qid}: {text}".format(
+                    qid=quote.qid, text=quote.text)
+
+                yield from self.client.privmsg(target, quote_msg)
+
+    @rate_limit()
+    @asyncio.coroutine
+    def handle_command_addquote(self, target, nick, args):
+        """
+        Handle !addquote <quote> command.
+        Add the provided quote to the database.
+        Only moderators may add new quotes.
+        """
+        if not args:
+            return
+        quote = args
+
+        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+            return
+
+        engine = yield from database.get_engine()
+        table = database.get_table("quote")
+
+        with (yield from engine) as conn:
+            query = table.insert().values(text=quote)
+            yield from conn.execute(query)
+
+            # get the number of newly added quote
+            query = (select([table.c.qid]).order_by(table.c.qid.desc())
+                                          .limit(1))
+            query = table.select().order_by(table.c.qid.desc()).limit(1)
+            res = yield from conn.execute(query)
+            quote = yield from res.first()
+            new_quote_msg = "New quote #{qid}: {text}".format(
+                qid=quote.qid, text=quote.text)
+
+            yield from self.client.privmsg(target, new_quote_msg)
+
+    @rate_limit()
+    @asyncio.coroutine
+    def handle_command_modquote(self, target, nick, args):
+        """
+        Handle !modquote <qid> <quote> command.
+        Modify the text for the provided quote ID.
+        Only moderators may modify quotes.
+        """
+        if not args or len(args.split(" ", 1)) != 2:
+            return
+
+        qid, quote = args.split(" ", 1)
+        if not qid.isdigit():
+            return
+        qid = int(qid)
+
+        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+            return
+
+        engine = yield from database.get_engine()
+        table = database.get_table("quote")
+
+        with (yield from engine) as conn:
+            # make sure that qid really exists
+            query = table.select().where(table.c.qid == qid).alias().count()
+            count = yield from conn.scalar(query)
+            if not count:
+                return
+
+            query = table.update().where(table.c.qid == qid).values(text=quote)
+            yield from conn.execute(query)
+
+    @rate_limit()
+    @asyncio.coroutine
+    def handle_command_delquote(self, target, nick, args):
+        """
+        Handle !delquote <qid> command.
+        Delete the provided quote ID from the database.
+        Only moderators may delete quotes.
+        """
+        if not args or not args.isdigit():
+            return
+        qid = int(args)
+
+        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+            return
+
+        engine = yield from database.get_engine()
+        table = database.get_table("quote")
+
+        with (yield from engine) as conn:
+            query = table.delete().where(table.c.qid == qid)
+            yield from conn.execute(query)
