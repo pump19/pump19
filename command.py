@@ -15,10 +15,9 @@ import asyncio
 import bs4
 import functools
 import logging
+import twitch
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
-BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
-                 "loadingreadyrun/videos?limit=1&broadcasts=true")
 
 
 class CommandHandler(object):
@@ -117,14 +116,10 @@ class CommandHandler(object):
 
         # broadcasts are updated here
         if feed == "broadcast":
-            broadcast_req = yield from aiohttp.request(
-                "get", BROADCAST_URL,
-                headers={"Accept": "application/vnd.twitchtv.v3+json"})
-            broadcast = yield from broadcast_req.json()
-            video = broadcast["videos"][0]
+            broadcast = yield from twitch.get_broadcasts("loadingreadyrun", 1)
+            video = next(broadcast, None)
 
-            broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(
-                video["title"], video["url"], video["recorded_at"])
+            broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*video)
 
             yield from self.client.privmsg(target, broadcast_msg)
         else:
