@@ -73,33 +73,7 @@ def get_moderators(stream):
 
 @asyncio.coroutine
 def is_moderator(stream, user):
-    """
-    Check whether a user is a moderator on a given channel.
-    Unknown users are checked against the Twitch.tv API, any positive results
-    are cached in the database.
-    """
-    # check database first
-    engine = yield from database.get_engine()
-    table = database.get_table("moderator")
-    with (yield from engine) as conn:
-        query = (table.select()
-                      .where(table.c.stream == stream)
-                      .where(table.c.name == user)
-                      .alias()
-                      .count())
-
-        count = yield from conn.scalar(query)
-        if count:
-            return True
-
+    """Check whether a user is a moderator on a given channel."""
     # if we're here, we don't have this one in our cache, query twitch instead
     moderators = yield from get_moderators(stream)
-    if user not in moderators:
-        return False
-
-    # user apparently is a moderator, extend cache
-    with (yield from engine) as conn:
-        query = table.insert().values(stream=stream, name=user)
-        yield from conn.execute(query)
-
-    return True
+    return True if user in moderators else False
