@@ -246,8 +246,8 @@ class CommandHandler(object):
         if not quote:
             return
 
-        #if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
-        #    return
+        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+            return
 
         cur = yield from self.db.cursor()
         query = """INSERT INTO quotes (quote, attrib_name, attrib_date)
