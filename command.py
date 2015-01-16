@@ -159,8 +159,7 @@ class CommandHandler(object):
         Handle !latest [video|podcast|broadcast] command.
         Post the most recent RSS feed item or Twitch.tv broadcast.
         """
-        if not feed:
-            feed = "video"
+        feed = feed or "video"
 
         # broadcasts are updated here
         if feed == "broadcast":
@@ -279,7 +278,7 @@ class CommandHandler(object):
         Delete the provided quote ID from the database.
         Only moderators may delete quotes.
         """
-        if not qid or not qid.isdigit():
+        if not qid:
             return
         qid = int(qid)
 
