@@ -14,6 +14,7 @@ See the file LICENSE for copying permission.
 import asyncio
 import command
 import config
+import database
 import logging
 import lrrfeed
 import protocol
@@ -35,13 +36,16 @@ def main():
     feed = lrrfeed.LRRFeedParser(client, **feed_config)
     feed.start()
 
+    dbconn = loop.run_until_complete(database.create_connection())
+
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, feed, **cmdhdl_config)
+    command.CommandHandler(client, feed, dbconn, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
         feed.stop()
+        dbconn.close()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
