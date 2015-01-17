@@ -20,7 +20,7 @@ import quotes
 import re
 import twitch
 
-PATREON_URL = "http://www.patreon.com/loadingreadyrun"
+PATREON_URL = "https://www.patreon.com/loadingreadyrun"
 
 CMD_REGEX = {
     "patreon":
