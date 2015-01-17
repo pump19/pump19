@@ -24,7 +24,7 @@ RSS_FEEDS = {
     }
 
 
-class LRRFeedParser(object):
+class LRRFeedParser:
     """
     The LRR RSS Feed parser manages tasks that update the LRR video and
     LRRcast feeds periodically.

@@ -20,7 +20,7 @@ bottom_logger.propagate = False
 bottom_logger.addHandler(logging.NullHandler())
 
 
-class Protocol(object):
+class Protocol:
     """IRC client class."""
     logger = logging.getLogger("protocol")
     restart = True

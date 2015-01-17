@@ -39,14 +39,14 @@ CMD_REGEX = {
 }
 
 
-class CommandHandler(object):
+class CommandHandler:
     """
     The command handler interacts with an IRC client and dispatches commands.
     It registers itself as a handler for PRIVMSG events.
     """
     logger = logging.getLogger("command")
 
-    class rate_limit(object):
+    class rate_limit:
         """A decorator that suppresses method calls within a certain delay."""
         last = 0.0
 
