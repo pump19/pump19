@@ -13,12 +13,12 @@ See the file LICENSE for copying permission.
 import aiohttp
 import asyncio
 import bs4
+import datetime
 import functools
 import logging
+import quotes
 import re
 import twitch
-
-from psycopg2 import DataError
 
 PATREON_URL = "http://www.patreon.com/loadingreadyrun"
 
@@ -88,14 +88,13 @@ class CommandHandler(object):
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, dbconn, *, prefix="!"):
+    def __init__(self, client, feed, *, prefix="!"):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
         self.prefix = prefix
         self.client = client
         self.feed = feed
-        self.db = dbconn
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
 
         self.setup_routing()
@@ -186,44 +185,13 @@ class CommandHandler(object):
         if qid:
             qid = int(qid)
 
-        cur = yield from self.db.cursor()
-        if qid:
-            query = """SELECT qid, quote, attrib_name, attrib_date
-                        FROM quotes
-                        WHERE qid = %(qid)s
-                        LIMIT 1;"""
+        (qid, quote, name, date) = yield from quotes.get_quote(qid=qid,
+                                                               attrib=attrib)
 
-            yield from cur.execute(query, {"qid": qid})
-        elif attrib:
-            query = """SELECT qid, quote, attrib_name, attrib_date
-                        FROM quotes
-                        WHERE attrib_name ~~* %(attrib)s
-                        ORDER BY random()
-                        LIMIT 1;"""
-
-            search = "%{attrib}%".format(attrib=attrib)
-            yield from cur.execute(query, {"attrib": search})
-        else:
-            query = """SELECT qid, quote, attrib_name, attrib_date
-                        FROM quotes
-                        ORDER BY random()
-                        LIMIT 1;"""
-
-            yield from cur.execute(query)
-
-        if not cur.rowcount:
-            if qid:
-                no_quote_msg = "Could not retrieve quote #{qid}.".format(
-                    qid=qid)
-            elif attrib:
-                no_quote_msg = ("Could not retrieve quote "
-                                "matching \"{attrib}\".".format(attrib=attrib))
-            else:
-                no_quote_msg = "Could not retrieve random quote."
-
+        if not qid:
+            no_quote_msg = "Could not find any matching quotes."
             yield from self.client.privmsg(target, no_quote_msg)
         else:
-            (qid, quote, name, date) = yield from cur.fetchone()
             quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
                                                            quote=quote)
             if name:
@@ -245,30 +213,31 @@ class CommandHandler(object):
         if not quote:
             return
 
+        if attrib_date:
+            try:
+                parsed = datetime.datetime.strptime(attrib_date, "%Y-%m-%d")
+                attrib_date = parsed.data()
+            except ValueError:
+                self.logger.error("Got invalid date string {date}.",
+                                  date=attrib_date)
+                no_quote_msg = "Could not add quote due to invalid date."
+                yield from self.client.privmsg(target, no_quote_msg)
+                return
+
         if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
             return
 
-        cur = yield from self.db.cursor()
-        query = """INSERT INTO quotes (quote, attrib_name, attrib_date)
-                   VALUES (%(quote)s, %(attrib_name)s, %(attrib_date)s)
-                   RETURNING qid, quote, attrib_name, attrib_date;"""
-        try:
-            yield from cur.execute(query, {"quote": quote,
-                                           "attrib_name": attrib_name,
-                                           "attrib_date": attrib_date})
-        except DataError:
-            no_quote_msg = "Could not add quote."
-            yield from self.client.privmsg(target, no_quote_msg)
-        else:
-            (qid, quote, name, date) = yield from cur.fetchone()
-            quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                               quote=quote)
-            if name:
-                quote_msg += " ~{name}".format(name=name)
-            if date:
-                quote_msg += " [{date!s}]".format(date=date)
+        (qid, quote, name, date) = yield from quotes.add_quote(
+            quote, attrib_name=attrib_name, attrib_date=attrib_date)
 
-            yield from self.client.privmsg(target, quote_msg)
+        quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
+                                                           quote=quote)
+        if name:
+            quote_msg += " ~{name}".format(name=name)
+        if date:
+            quote_msg += " [{date!s}]".format(date=date)
+
+        yield from self.client.privmsg(target, quote_msg)
 
     @rate_limit()
     @asyncio.coroutine
@@ -285,6 +254,4 @@ class CommandHandler(object):
         if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
             return
 
-        cur = yield from self.db.cursor()
-        query = "DELETE FROM quotes WHERE qid = %(qid)s;"
-        yield from cur.execute(query, {"qid": qid})
+        yield from quotes.del_quote(qid)
