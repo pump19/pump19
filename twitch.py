@@ -13,7 +13,6 @@ See the file LICENSE for copying permission.
 
 import asyncio
 import aiohttp
-import database
 import logging
 
 CHATTERS_URL = "http://tmi.twitch.tv/group/user/{stream}/chatters"
@@ -74,6 +73,14 @@ def get_moderators(stream):
 @asyncio.coroutine
 def is_moderator(stream, user):
     """Check whether a user is a moderator on a given channel."""
-    # if we're here, we don't have this one in our cache, query twitch instead
-    moderators = yield from get_moderators(stream)
-    return True if user in moderators else False
+    # add a cache if we don't already have one
+    if not hasattr(is_moderator, "cache"):
+        is_moderator.cache = dict()
+
+    key = (stream, user)
+    if key not in is_moderator.cache:
+        # we don't know those, query twitch
+        mods = yield from get_moderators(stream)
+        is_moderator.cache[key] = True if user in mods else False
+
+    return is_moderator.cache[key]
