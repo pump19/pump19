@@ -46,13 +46,16 @@ class CommandHandler:
     """
     logger = logging.getLogger("command")
 
-    class rate_limit:
-        """A decorator that suppresses method calls within a certain delay."""
-        last = 0.0
+    class Limiter:
+        """
+        A decorator that suppresses method calls within a certain time span.
+        """
 
-        def __init__(self, *, delay=30, loop=None):
+        logger = logging.getLogger("command.limiter")
+
+        def __init__(self, *, span=30, loop=None):
             """Initialize rate limiter with a default delay of 30."""
-            self.delay = delay
+            self.span = span
             self.loop = loop or asyncio.get_event_loop()
 
         def __call__(self, func):
@@ -61,10 +64,20 @@ class CommandHandler:
             @asyncio.coroutine
             def wrapper(*args, **kwargs):
                 now = self.loop.time()
-                if (now - self.last) > self.delay:
-                    self.last = now
+                if (now - wrapper._spam_last) > wrapper._spam_span:
+                    wrapper._spam_last = now
                     yield from func(*args, **kwargs)
+                else:
+                    self.logger.warning("Suppressed call to {name}.".format(
+                        name=func.__name__))
+
+            # each wrapper remembers its own delay and last call
+            wrapper._spam_span = self.span
+            wrapper._spam_last = 0.0
+
             return wrapper
+
+    rate_limited = Limiter()
 
     class CommandRouter:
         """A simple router matching strings against a set of regular
@@ -130,7 +143,7 @@ class CommandHandler:
         if handle_command and callable(handle_command):
             yield from handle_command(target, nick)
 
-    @rate_limit()
+    @rate_limited
     @asyncio.coroutine
     def handle_command_patreon(self, target, nick):
         """
@@ -151,7 +164,7 @@ class CommandHandler:
 
         yield from self.client.privmsg(target, patreon_msg)
 
-    @rate_limit()
+    @rate_limited
     @asyncio.coroutine
     def handle_command_latest(self, target, nick, *, feed=None):
         """
@@ -175,7 +188,7 @@ class CommandHandler:
             # let the feed parser announce it
             yield from self.feed.announce(feed, target=target)
 
-    @rate_limit()
+    @rate_limited
     @asyncio.coroutine
     def handle_command_quote(self, target, nick, *, qid=None, attrib=None):
         """
@@ -201,7 +214,7 @@ class CommandHandler:
 
             yield from self.client.privmsg(target, quote_msg)
 
-    @rate_limit()
+    @rate_limited
     @asyncio.coroutine
     def handle_command_addquote(self, target, nick, *, quote=None,
                                 attrib_name=None, attrib_date=None):
@@ -239,7 +252,7 @@ class CommandHandler:
 
         yield from self.client.privmsg(target, quote_msg)
 
-    @rate_limit()
+    @rate_limited
     @asyncio.coroutine
     def handle_command_delquote(self, target, nick, *, qid=None):
         """
