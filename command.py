@@ -104,7 +104,7 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, *, prefix="!"):
+    def __init__(self, client, feed, *, prefix="&"):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
