@@ -208,7 +208,7 @@ class CommandHandler:
             quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
                                                            quote=quote)
             if name:
-                quote_msg += " ~{name}".format(name=name)
+                quote_msg += " —{name}".format(name=name)
             if date:
                 quote_msg += " [{date!s}]".format(date=date)
 
@@ -246,7 +246,7 @@ class CommandHandler:
         quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
                                                            quote=quote)
         if name:
-            quote_msg += " ~{name}".format(name=name)
+            quote_msg += " —{name}".format(name=name)
         if date:
             quote_msg += " [{date!s}]".format(date=date)
 
