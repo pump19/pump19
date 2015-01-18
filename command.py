@@ -21,6 +21,7 @@ import re
 import twitch
 
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
+COMMAND_URL = "https://pump19.herokuapp.com/commands"
 
 CMD_REGEX = {
     "patreon":
@@ -35,7 +36,9 @@ CMD_REGEX = {
                    "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
                    "(?: (?P<quote>.+))"),
     "delquote":
-        re.compile("delquote (?P<qid>\d+)")
+        re.compile("delquote (?P<qid>\d+)"),
+    "help":
+        re.compile("help")
 }
 
 
@@ -268,3 +271,13 @@ class CommandHandler:
             return
 
         yield from quotes.del_quote(qid)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_help(self, target, nick):
+        """
+        Handle !help command.
+        Posts a link to the golem's list of supported commands.
+        """
+        help_msg = "Help: {url}".format(url=COMMAND_URL)
+        yield from self.client.privmsg(target, help_msg)
