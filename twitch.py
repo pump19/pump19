@@ -75,12 +75,16 @@ def is_moderator(stream, user):
     """Check whether a user is a moderator on a given channel."""
     # add a cache if we don't already have one
     if not hasattr(is_moderator, "cache"):
-        is_moderator.cache = dict()
+        is_moderator.cache = list()
 
     key = (stream, user)
-    if key not in is_moderator.cache:
+    if key in is_moderator.cache:
+        return True
+    else:
         # we don't know those, query twitch
         mods = yield from get_moderators(stream)
-        is_moderator.cache[key] = True if user in mods else False
-
-    return is_moderator.cache[key]
+        if user in mods:
+            is_moderator.cache.append(key)
+            return True
+        else:
+            return False
