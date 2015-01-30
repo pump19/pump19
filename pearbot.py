@@ -19,7 +19,7 @@ import lrrfeed
 import protocol
 import signal
 
-LOG_FORMAT = "{asctime} [{process}] {levelname}({name}): {message}"
+LOG_FORMAT = "{levelname}({name}): {message}"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, style="{")
 
 
