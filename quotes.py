@@ -11,20 +11,23 @@ See the file LICENSE for copying permission.
 """
 
 import asyncio
-import database
+import aiopg
 
-POOL = None
-POOL_LOCK = asyncio.Lock()
+from os import environ
+
+DSN = environ["DATABASE_DSN"]
 
 
 @asyncio.coroutine
 def get_pool():
-    global POOL
-    if not POOL:
-        with (yield from POOL_LOCK):
-            POOL = yield from database.create_pool(minsize=0, maxsize=2)
+    with (yield from get_pool._lock):
+        if not get_pool._pool:
+            pool = yield from aiopg.create_pool(DSN, minsize=1, maxsize=5)
+            get_pool._pool = pool
 
-    return POOL
+        return get_pool._pool
+get_pool._pool = None
+get_pool._lock = asyncio.Lock()
 
 
 @asyncio.coroutine
