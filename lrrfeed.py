@@ -102,7 +102,7 @@ class LRRFeedParser:
             return
 
         with (yield from self.updater[feed]["lock"]):
-            self.logger.info("Running update for RSS feed {0}.".format(feed))
+            self.logger.debug("Running update for RSS feed {0}.".format(feed))
 
             feed_url = RSS_FEEDS[feed]["url"]
             new_entry = yield from self.get_latest(feed_url)
@@ -145,7 +145,7 @@ class LRRFeedParser:
     @asyncio.coroutine
     def get_latest(feed_url):
         logger = logging.getLogger("lrrfeed")
-        logger.info("Retrieving latest entry for {0}.".format(feed_url))
+        logger.debug("Retrieving latest entry for {0}.".format(feed_url))
 
         feed_req = yield from aiohttp.request(
             "get", feed_url, headers={"Accept": "application/rss+xml"})
