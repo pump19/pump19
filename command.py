@@ -21,7 +21,7 @@ import re
 import twitch
 
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
-COMMAND_URL = "https://pump19.herokuapp.com/commands"
+COMMAND_URL = "http://pump19.tk/commands"
 
 CMD_REGEX = {
     "patreon":
