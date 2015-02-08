@@ -22,6 +22,7 @@ import twitch
 
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
 COMMAND_URL = "http://pump19.tk/commands"
+QUOTEDB_URL = "http://pump19.tk/quotes/"
 
 CMD_REGEX = {
     "patreon":
@@ -30,6 +31,8 @@ CMD_REGEX = {
         re.compile("latest(?: (?P<feed>video|podcast|broadcast))?"),
     "quote":
         re.compile("quote(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?"),
+    "qdb":
+        re.compile("qdb"),
     "addquote":
         re.compile("addquote"
                    "(?: \((?P<attrib_name>.+)\))?"
@@ -216,6 +219,16 @@ class CommandHandler:
                 quote_msg += " [{date!s}]".format(date=date)
 
             yield from self.client.privmsg(target, quote_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_qdb(self, target, nick):
+        """
+        Handle !qdb command.
+        Posts a link to the golem's list of quotations.
+        """
+        qdb_msg = "Quote Database: {url}".format(url=QUOTEDB_URL)
+        yield from self.client.privmsg(target, qdb_msg)
 
     @rate_limited
     @asyncio.coroutine
