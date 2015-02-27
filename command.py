@@ -245,7 +245,7 @@ class CommandHandler:
         if attrib_date:
             try:
                 parsed = datetime.datetime.strptime(attrib_date, "%Y-%m-%d")
-                attrib_date = parsed.data()
+                attrib_date = parsed.date()
             except ValueError:
                 self.logger.error("Got invalid date string {date}.",
                                   date=attrib_date)
