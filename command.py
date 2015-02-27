@@ -107,11 +107,12 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, *, prefix="&"):
+    def __init__(self, client, feed, *, prefix="&", override=None):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
         self.prefix = prefix
+        self.override = override
         self.client = client
         self.feed = feed
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
@@ -253,7 +254,8 @@ class CommandHandler:
                 yield from self.client.privmsg(target, no_quote_msg)
                 return
 
-        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+        if not (self.override == nick or
+                (yield from twitch.is_moderator("loadingreadyrun", nick))):
             return
 
         (qid, quote, name, date) = yield from quotes.add_quote(
@@ -280,7 +282,8 @@ class CommandHandler:
             return
         qid = int(qid)
 
-        if not (yield from twitch.is_moderator("loadingreadyrun", nick)):
+        if not (self.override == nick or
+                (yield from twitch.is_moderator("loadingreadyrun", nick))):
             return
 
         yield from quotes.del_quote(qid)

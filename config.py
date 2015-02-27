@@ -33,7 +33,8 @@ def __get_irc_config():
 def __get_cmd_config():
     """Get a configuration dictionary for a CommandHandler instance."""
 
-    return {"prefix": environ.get("PEARBOT_CMD_PREFIX", "!")}
+    return {"prefix": environ.get("PEARBOT_CMD_PREFIX", "!"),
+            "override": environ.get("PEARBOT_CMD_OVERRIDE")}
 
 
 def __get_rss_config():
