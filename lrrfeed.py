@@ -106,11 +106,18 @@ class LRRFeedParser:
 
             feed_url = RSS_FEEDS[feed]["url"]
             new_entry = yield from self.get_latest(feed_url)
-            old_entry = self.updater[feed]["latest"]
+
+            # reset the timer
+            self.updater[feed]["last"] = self.loop.time()
+
+            if not new_entry:
+                self.logger.error("Update for RSS feed {0} did not complete "
+                                  "successfully.".format(feed))
+                return
 
             # remember latest entry
+            old_entry = self.updater[feed]["latest"]
             self.updater[feed]["latest"] = new_entry
-            self.updater[feed]["last"] = self.loop.time()
 
             if not old_entry:
                 self.logger.info("Detected first entry for RSS feed "
@@ -147,13 +154,20 @@ class LRRFeedParser:
         logger = logging.getLogger("lrrfeed")
         logger.debug("Retrieving latest entry for {0}.".format(feed_url))
 
-        feed_req = yield from aiohttp.request(
-            "get", feed_url, headers={"Accept": "application/rss+xml"})
-        feed_body = yield from feed_req.text()
+        try:
+            feed_req = yield from aiohttp.request(
+                "get", feed_url, headers={"Accept": "application/rss+xml"})
+            feed_body = yield from feed_req.text()
+        except aiohttp.errors.ClientError:
+            logger.exception("Exception raised when updating RSS feed for "
+                             "{0}.".format(feed_url))
+            return None
+
         feed = feedparser.parse(feed_body)
         if not feed.entries or not len(feed.entries):
-            logger.warning(
-                "RSS feed {0} did not provide any entries.".format(feed_url))
+            logger.warning("RSS feed {0} did not provide any entries.".format(
+                feed_url))
+            return None
 
         latest = feed.entries[0]
         time = datetime.datetime(*latest.published_parsed[:6])
