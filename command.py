@@ -158,7 +158,7 @@ class CommandHandler:
         Post the number of patrons and the total earnings per month.
         """
         patreon_req = yield from aiohttp.request("get", PATREON_URL)
-        patreon_body = yield from patreon_req.text()
+        patreon_body = yield from patreon_req.read()
         patreon_soup = bs4.BeautifulSoup(patreon_body)
         tag_patrons = patreon_soup.find("div", id="totalPatrons")
         nof_patrons = tag_patrons.string if tag_patrons else "N/A"
