@@ -18,6 +18,8 @@ import logging
 CHATTERS_URL = "http://tmi.twitch.tv/group/user/{stream}/chatters"
 BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
                  "{stream}/videos?limit={limit}&broadcasts=true")
+HIGHLIGHT_URL = ("https://api.twitch.tv/kraken/channels/"
+                 "{stream}/videos?limit={limit}&broadcasts=false")
 
 
 @asyncio.coroutine
@@ -41,6 +43,29 @@ def get_broadcasts(stream, limit):
 
     return ((video["title"], video["url"], video["recorded_at"])
             for video in broadcasts["videos"])
+
+
+@asyncio.coroutine
+def get_highlights(stream, limit):
+    """
+    Request the latest n highlights for a given stream.
+    Returns an iterable of highlights, each entry being a tuple of title, url
+    and date.
+    """
+    logger = logging.getLogger("twitch")
+    logger.info("Requesting {limit} highlight(s) for {stream}.".format(
+        stream=stream, limit=limit))
+
+    hl_url = HIGHLIGHT_URL.format(stream=stream, limit=limit)
+    hl_req = yield from aiohttp.request(
+        "get", hl_url, headers={"Accept": "application/vnd.twitchtv.v3+json"})
+    highlights = yield from hl_req.json()
+
+    logger.debug("Retrieved {nof} highlights for {stream}.".format(
+        nof=len(highlights["videos"]), stream=stream))
+
+    return ((video["title"], video["url"], video["recorded_at"])
+            for video in highlights["videos"])
 
 
 @asyncio.coroutine

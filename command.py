@@ -28,7 +28,7 @@ CMD_REGEX = {
     "patreon":
         re.compile("patreon"),
     "latest":
-        re.compile("latest(?: (?P<feed>video|podcast|broadcast))?"),
+        re.compile("latest(?: (?P<feed>video|podcast|broadcast|highlight))?"),
     "quote":
         re.compile("quote(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?"),
     "qdb":
@@ -175,7 +175,7 @@ class CommandHandler:
     @asyncio.coroutine
     def handle_command_latest(self, target, nick, *, feed=None):
         """
-        Handle !latest [video|podcast|broadcast] command.
+        Handle !latest [video|podcast|broadcast|highlight] command.
         Post the most recent RSS feed item or Twitch.tv broadcast.
         """
         feed = feed or "video"
@@ -188,6 +188,13 @@ class CommandHandler:
             broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*video)
 
             yield from self.client.privmsg(target, broadcast_msg)
+        elif feed == "highlight":
+            highlight = yield from twitch.get_highlights("loadingreadyrun", 1)
+            video = next(highlight, None)
+
+            highlight_msg = "Latest Highlight: {0} ({1}) [{2}]".format(*video)
+
+            yield from self.client.privmsg(target, highlight_msg)
         else:
             # start a manual update
             yield from self.feed.update(feed)
