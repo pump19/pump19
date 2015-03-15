@@ -37,14 +37,14 @@ def get_quote(*, qid=None, attrib=None):
         if qid:
             query = """SELECT qid, quote, attrib_name, attrib_date
                         FROM quotes
-                        WHERE qid = %(qid)s
+                        WHERE qid = %(qid)s AND deleted = FALSE
                         LIMIT 1;"""
 
             yield from cur.execute(query, {"qid": qid})
         elif attrib:
             query = """SELECT qid, quote, attrib_name, attrib_date
                         FROM quotes
-                        WHERE attrib_name ~~* %(attrib)s
+                        WHERE attrib_name ~~* %(attrib)s AND deleted = FALSE
                         ORDER BY random()
                         LIMIT 1;"""
 
@@ -53,6 +53,7 @@ def get_quote(*, qid=None, attrib=None):
         else:
             query = """SELECT qid, quote, attrib_name, attrib_date
                         FROM quotes
+                        WHERE deleted = FALSE
                         ORDER BY random()
                         LIMIT 1;"""
 
@@ -85,5 +86,5 @@ def add_quote(quote, *, attrib_name=None, attrib_date=None):
 def del_quote(qid):
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
-        query = "DELETE FROM quotes WHERE qid = %(qid)s;"
+        query = "UPDATE quotes SET deleted = TRUE WHERE qid = %(qid)s;"
         yield from cur.execute(query, {"qid": qid})
