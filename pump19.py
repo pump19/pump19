@@ -48,6 +48,7 @@ def main():
     logger.info("Running protocol activity.")
     task = client.run()
     loop.run_until_complete(task)
+    loop.close()
     logger.info("Protocol activity ceased.")
     logger.info("Exiting...")
 
