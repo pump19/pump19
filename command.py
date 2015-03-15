@@ -35,7 +35,7 @@ CMD_REGEX = {
         re.compile("qdb"),
     "addquote":
         re.compile("addquote"
-                   "(?: \((?P<attrib_name>.+)\))?"
+                   "(?: \((?P<attrib_name>.+?)\))?"
                    "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
                    "(?: (?P<quote>.+))"),
     "delquote":
