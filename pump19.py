@@ -2,9 +2,9 @@
 # vim:fileencoding=utf-8:ts=8:et:sw=4:sts=4:tw=79
 
 """
-pearbot.py
+pump19.py
 
-The PearBot IRC bot entry point.
+The Pump19 IRC Golem entry point.
 It sets up logging and starts up the IRC client.
 
 Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
@@ -24,8 +24,8 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, style="{")
 
 
 def main():
-    logger = logging.getLogger("pearbot")
-    logger.info("PearBot started.")
+    logger = logging.getLogger("pump19")
+    logger.info("Pump19 started.")
 
     loop = asyncio.get_event_loop()
     client_config = config.get_config("irc")

@@ -4,7 +4,7 @@
 """
 config.py
 
-The PearBot IRC bot configuration loader.
+The Pump19 IRC Golem configuration loader.
 It reads configuratiom from environment variables and provides access to
 component specific dictionaries.
 
@@ -17,30 +17,30 @@ from os import environ
 
 def __get_irc_config():
     """Get a configuration dictionary for IRC specific settings."""
-    channel_list = environ["PEARBOT_IRC_CHANNELS"]
+    channel_list = environ["PUMP19_IRC_CHANNELS"]
     channels = channel_list.split(";")
 
-    return {"hostname": environ["PEARBOT_IRC_HOSTNAME"],
-            "port": int(environ["PEARBOT_IRC_PORT"]),
-            "ssl": True if "PEARBOT_IRC_SSL" in environ else False,
-            "password": environ.get("PEARBOT_IRC_PASSWORD"),
-            "nickname": environ["PEARBOT_IRC_NICKNAME"],
-            "username": environ["PEARBOT_IRC_USERNAME"],
-            "realname": environ["PEARBOT_IRC_REALNAME"],
+    return {"hostname": environ["PUMP19_IRC_HOSTNAME"],
+            "port": int(environ["PUMP19_IRC_PORT"]),
+            "ssl": True if "PUMP19_IRC_SSL" in environ else False,
+            "password": environ.get("PUMP19_IRC_PASSWORD"),
+            "nickname": environ["PUMP19_IRC_NICKNAME"],
+            "username": environ["PUMP19_IRC_USERNAME"],
+            "realname": environ["PUMP19_IRC_REALNAME"],
             "channels": channels}
 
 
 def __get_cmd_config():
     """Get a configuration dictionary for a CommandHandler instance."""
 
-    return {"prefix": environ.get("PEARBOT_CMD_PREFIX", "!"),
-            "override": environ.get("PEARBOT_CMD_OVERRIDE")}
+    return {"prefix": environ.get("PUMP19_CMD_PREFIX", "!"),
+            "override": environ.get("PUMP19_CMD_OVERRIDE")}
 
 
 def __get_rss_config():
     """Get a configuration dictionary for a LRRFeedParser instance."""
 
-    return {"delay": int(environ.get("PEARBOT_RSS_DELAY", 300))}
+    return {"delay": int(environ.get("PUMP19_RSS_DELAY", 300))}
 
 
 def get_config(component):
