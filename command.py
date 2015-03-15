@@ -293,7 +293,13 @@ class CommandHandler:
                 (yield from twitch.is_moderator("loadingreadyrun", nick))):
             return
 
-        yield from quotes.del_quote(qid)
+        success = yield from quotes.del_quote(qid)
+        if success:
+            quote_msg = "Marked quote #{qid} as deleted.".format(qid=qid)
+        else:
+            quote_msg = "Could not find quote #{qid}.".format(qid=qid)
+
+        yield from self.client.privmsg(target, quote_msg)
 
     @rate_limited
     @asyncio.coroutine

@@ -88,3 +88,5 @@ def del_quote(qid):
     with (yield from pool.cursor()) as cur:
         query = "UPDATE quotes SET deleted = TRUE WHERE qid = %(qid)s;"
         yield from cur.execute(query, {"qid": qid})
+
+        return True if cur.rowcount else False
