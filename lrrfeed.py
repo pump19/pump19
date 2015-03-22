@@ -172,6 +172,6 @@ class LRRFeedParser:
         latest = feed.entries[0]
         time = datetime.datetime(*latest.published_parsed[:6])
 
-        return {"url": latest.link,
+        return {"url": latest.guid,
                 "title": latest.title,
                 "time": time}
