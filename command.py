@@ -21,8 +21,8 @@ import re
 import twitch
 
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
-# COMMAND_URL = "http://pump19.tk/commands"
-# QUOTEDB_URL = "http://pump19.tk/quotes/"
+COMMAND_URL = "http://pump19.eu/commands"
+QUOTEDB_URL = "http://pump19.eu/quotes/"
 
 CMD_REGEX = {
     "patreon":
@@ -31,8 +31,8 @@ CMD_REGEX = {
         re.compile("latest(?: (?P<feed>video|podcast|broadcast|highlight))?"),
     "quote":
         re.compile("quote(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?"),
-    # "qdb":
-    #     re.compile("qdb"),
+    "qdb":
+        re.compile("qdb"),
     "addquote":
         re.compile("addquote"
                    "(?: \((?P<attrib_name>.+?)\))?"
@@ -40,8 +40,8 @@ CMD_REGEX = {
                    "(?: (?P<quote>.+))"),
     "delquote":
         re.compile("delquote (?P<qid>\d+)"),
-    # "help":
-    #     re.compile("help")
+    "help":
+        re.compile("help")
 }
 
 
@@ -228,15 +228,15 @@ class CommandHandler:
 
             yield from self.client.privmsg(target, quote_msg)
 
-    # @rate_limited
-    # @asyncio.coroutine
-    # def handle_command_qdb(self, target, nick):
-    #     """
-    #     Handle !qdb command.
-    #     Posts a link to the golem's list of quotations.
-    #     """
-    #     qdb_msg = "Quote Database: {url}".format(url=QUOTEDB_URL)
-    #     yield from self.client.privmsg(target, qdb_msg)
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_qdb(self, target, nick):
+        """
+        Handle !qdb command.
+        Posts a link to the golem's list of quotations.
+        """
+        qdb_msg = "Quote Database: {url}".format(url=QUOTEDB_URL)
+        yield from self.client.privmsg(target, qdb_msg)
 
     @rate_limited
     @asyncio.coroutine
@@ -301,12 +301,12 @@ class CommandHandler:
 
         yield from self.client.privmsg(target, quote_msg)
 
-    # @rate_limited
-    # @asyncio.coroutine
-    # def handle_command_help(self, target, nick):
-    #     """
-    #     Handle !help command.
-    #     Posts a link to the golem's list of supported commands.
-    #     """
-    #     help_msg = "Help: {url}".format(url=COMMAND_URL)
-    #     yield from self.client.privmsg(target, help_msg)
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_help(self, target, nick):
+        """
+        Handle !help command.
+        Posts a link to the golem's list of supported commands.
+        """
+        help_msg = "Help: {url}".format(url=COMMAND_URL)
+        yield from self.client.privmsg(target, help_msg)
