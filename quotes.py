@@ -90,3 +90,12 @@ def del_quote(qid):
         yield from cur.execute(query, {"qid": qid})
 
         return True if cur.rowcount else False
+
+
+@asyncio.coroutine
+def rate_quote(qid, voter, good):
+    pool = yield from get_pool()
+    with (yield from pool.cursor()) as cur:
+        query = "SELECT merge_quote_rating(%(qid)s, %(voter)s, %(good)s);"
+        yield from cur.execute(
+                query, {"qid": qid, "voter": voter, "good": good})

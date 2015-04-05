@@ -40,6 +40,10 @@ CMD_REGEX = {
                    "(?: (?P<quote>.+))"),
     "delquote":
         re.compile("delquote (?P<qid>\d+)"),
+    "goodquote":
+        re.compile("goodquote (?P<qid>\d+)"),
+    "badquote":
+        re.compile("badquote (?P<qid>\d+)"),
     "help":
         re.compile("help")
 }
@@ -300,6 +304,30 @@ class CommandHandler:
             quote_msg = "Could not find quote #{qid}.".format(qid=qid)
 
         yield from self.client.privmsg(target, quote_msg)
+
+    @asyncio.coroutine
+    def handle_command_goodquote(self, target, nick, *, qid=None):
+        """
+        Handle !goodquote <qid> command.
+        Rate the provided quote ID from the database.
+        """
+        if not qid:
+            return
+        qid = int(qid)
+
+        yield from quotes.rate_quote(qid, nick, True)
+
+    @asyncio.coroutine
+    def handle_command_badquote(self, target, nick, *, qid=None):
+        """
+        Handle !badquote <qid> command.
+        Rate the provided quote ID from the database.
+        """
+        if not qid:
+            return
+        qid = int(qid)
+
+        yield from quotes.rate_quote(qid, nick, False)
 
     @rate_limited
     @asyncio.coroutine
