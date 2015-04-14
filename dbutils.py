@@ -2,9 +2,9 @@
 # vim:fileencoding=utf-8:ts=8:et:sw=4:sts=4:tw=79
 
 """
-quotes.py
+dbutils.py
 
-Quotation management functions.
+Various database driven utility functions.
 
 Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
 See the file LICENSE for copying permission.
@@ -13,9 +13,13 @@ See the file LICENSE for copying permission.
 import asyncio
 import aiopg
 
+from Crypto.Cipher import ARC2
 from os import environ
 
 DSN = environ["DATABASE_DSN"]
+
+CODEFALL_CIPHER = ARC2.new(environ["CODEFALL_SECRET"], ARC2.MODE_ECB)
+CODEFALL_SHOW_URL = environ["CODEFALL_SHOW_URL"]
 
 
 @asyncio.coroutine
@@ -32,6 +36,7 @@ get_pool._lock = asyncio.Lock()
 
 @asyncio.coroutine
 def get_quote(*, qid=None, attrib=None):
+    """Get a single quote, either random or selected by qid or attribution."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         if qid:
@@ -68,6 +73,7 @@ def get_quote(*, qid=None, attrib=None):
 
 @asyncio.coroutine
 def add_quote(quote, *, attrib_name=None, attrib_date=None):
+    """Add a new quote with optional attribuation."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         query = """INSERT INTO quotes (quote, attrib_name, attrib_date)
@@ -84,6 +90,7 @@ def add_quote(quote, *, attrib_name=None, attrib_date=None):
 
 @asyncio.coroutine
 def del_quote(qid):
+    """Mark a single quote as deleted."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         query = "UPDATE quotes SET deleted = TRUE WHERE qid = %(qid)s;"
@@ -94,8 +101,30 @@ def del_quote(qid):
 
 @asyncio.coroutine
 def rate_quote(qid, voter, good):
+    """Rate a single quote as either good or bad."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         query = "SELECT merge_quote_rating(%(qid)s, %(voter)s, %(good)s);"
         yield from cur.execute(
                 query, {"qid": qid, "voter": voter, "good": good})
+
+
+@asyncio.coroutine
+def get_codefall_entry(user_name):
+    """Get a codefall entry added by a given user."""
+    pool = yield from get_pool()
+    with (yield from pool.cursor()) as cur:
+        query = """SELECT cid, description, code_type
+                   FROM codefall
+                   WHERE user_name = %(user_name)s AND claimed = False;"""
+        yield from cur.execute(query, {"user_name": user_name})
+
+        if not cur.rowcount:
+            return (None, None, None)
+        else:
+            (cid, description, code_type) = yield from cur.fetchone()
+            raw = cid.to_bytes(ARC2.block_size, byteorder="big")
+            msg = CODEFALL_CIPHER.encrypt(raw)
+            secret = int.from_bytes(msg, byteorder="big")
+            secret_url = CODEFALL_SHOW_URL.format(secret=secret)
+            return (secret_url, description, code_type)

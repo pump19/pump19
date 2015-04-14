@@ -16,7 +16,7 @@ import bs4
 import datetime
 import functools
 import logging
-import quotes
+import dbutils
 import re
 import twitch
 
@@ -44,6 +44,8 @@ CMD_REGEX = {
         re.compile("goodquote (?P<qid>\d+)"),
     "badquote":
         re.compile("badquote (?P<qid>\d+)"),
+    "codefall":
+        re.compile("codefall"),
     "help":
         re.compile("help")
 }
@@ -216,8 +218,8 @@ class CommandHandler:
         if qid:
             qid = int(qid)
 
-        (qid, quote, name, date) = yield from quotes.get_quote(qid=qid,
-                                                               attrib=attrib)
+        (qid, quote, name, date) = yield from dbutils.get_quote(qid=qid,
+                                                                attrib=attrib)
 
         if not qid:
             no_quote_msg = "Could not find any matching quotes."
@@ -269,7 +271,7 @@ class CommandHandler:
                 (yield from twitch.is_moderator("loadingreadyrun", nick))):
             return
 
-        (qid, quote, name, date) = yield from quotes.add_quote(
+        (qid, quote, name, date) = yield from dbutils.add_quote(
             quote, attrib_name=attrib_name, attrib_date=attrib_date)
 
         quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
@@ -297,7 +299,7 @@ class CommandHandler:
                 (yield from twitch.is_moderator("loadingreadyrun", nick))):
             return
 
-        success = yield from quotes.del_quote(qid)
+        success = yield from dbutils.del_quote(qid)
         if success:
             quote_msg = "Marked quote #{qid} as deleted.".format(qid=qid)
         else:
@@ -315,7 +317,7 @@ class CommandHandler:
             return
         qid = int(qid)
 
-        yield from quotes.rate_quote(qid, nick, True)
+        yield from dbutils.rate_quote(qid, nick, True)
 
     @asyncio.coroutine
     def handle_command_badquote(self, target, nick, *, qid=None):
@@ -327,7 +329,27 @@ class CommandHandler:
             return
         qid = int(qid)
 
-        yield from quotes.rate_quote(qid, nick, False)
+        yield from dbutils.rate_quote(qid, nick, False)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_codefall(self, target, nick):
+        """
+        Handle !codefall command.
+        If available, post a single unclaimed codefall URL.
+        """
+        (secret_url,
+         description,
+         code_type) = yield from dbutils.get_codefall_entry(nick)
+
+        if not secret_url:
+            no_codefall_msg = "Could not find any unclaimed codes."
+            yield from self.client.privmsg(target, no_codefall_msg)
+        else:
+            codefall_msg = "Codefall: {desc} ({ctype}) {url}".format(
+                    desc=description, ctype=code_type, url=secret_url)
+
+            yield from self.client.privmsg(target, codefall_msg)
 
     @rate_limited
     @asyncio.coroutine
