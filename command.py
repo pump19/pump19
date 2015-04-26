@@ -26,28 +26,30 @@ QUOTEDB_URL = "http://pump19.eu/quotes/"
 
 CMD_REGEX = {
     "patreon":
-        re.compile("patreon"),
+        re.compile("^patreon$"),
     "latest":
-        re.compile("latest(?: (?P<feed>video|podcast|broadcast|highlight))?"),
+        re.compile("^latest"
+                   "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "quote":
-        re.compile("quote(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?"),
+        re.compile("^quote"
+                   "(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?$"),
     "qdb":
-        re.compile("qdb"),
+        re.compile("^qdb$"),
     "addquote":
-        re.compile("addquote"
+        re.compile("^addquote"
                    "(?: \((?P<attrib_name>.+?)\))?"
                    "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
-                   "(?: (?P<quote>.+))"),
+                   "(?: (?P<quote>.+))$"),
     "delquote":
-        re.compile("delquote (?P<qid>\d+)"),
+        re.compile("^delquote (?P<qid>\d+)$"),
     "goodquote":
-        re.compile("goodquote (?P<qid>\d+)"),
+        re.compile("^goodquote (?P<qid>\d+)$"),
     "badquote":
-        re.compile("badquote (?P<qid>\d+)"),
+        re.compile("^badquote (?P<qid>\d+)$"),
     "codefall":
-        re.compile("codefall"),
+        re.compile("^codefall$"),
     "help":
-        re.compile("help")
+        re.compile("^help$")
 }
 
 
