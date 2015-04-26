@@ -40,6 +40,12 @@ CMD_REGEX = {
                    "(?: \((?P<attrib_name>.+?)\))?"
                    "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
                    "(?: (?P<quote>.+))$"),
+    "modquote":
+        re.compile("^modquote"
+                   "(?: (?P<qid>\d+))"
+                   "(?: \((?P<attrib_name>.+?)\))?"
+                   "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
+                   "(?: (?P<quote>.+))$"),
     "delquote":
         re.compile("^delquote"
                    "(?: (?P<qid>\d+))$"),
@@ -282,6 +288,51 @@ class CommandHandler:
 
         quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
                                                            quote=quote)
+        if name:
+            quote_msg += " —{name}".format(name=name)
+        if date:
+            quote_msg += " [{date!s}]".format(date=date)
+
+        yield from self.client.privmsg(target, quote_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_modquote(self, target, nick, *, qid=None, quote=None,
+                                attrib_name=None, attrib_date=None):
+        """
+        Handle !modquote <qid> (<attrib_name>) [<attrib_date>] <quote> command.
+        Update the provided quote in the database.
+        Only moderators may modify quotes.
+        """
+        if not qid or not quote:
+            return
+        qid = int(qid)
+
+        if attrib_date:
+            try:
+                parsed = datetime.datetime.strptime(attrib_date, "%Y-%m-%d")
+                attrib_date = parsed.date()
+            except ValueError:
+                self.logger.error("Got invalid date string {date}.",
+                                  date=attrib_date)
+                no_quote_msg = "Could not modify quote due to invalid date."
+                yield from self.client.privmsg(target, no_quote_msg)
+                return
+
+        if not (self.override == nick or
+                (yield from twitch.is_moderator("loadingreadyrun", nick))):
+            return
+
+        (qid, quote, name, date) = yield from dbutils.mod_quote(
+            qid, quote, attrib_name=attrib_name, attrib_date=attrib_date)
+
+        if not qid:
+            no_quote_msg = "Could not modify quote."
+            yield from self.client.privmsg(target, no_quote_msg)
+            return
+
+        quote_msg = "Modified quote #{qid}: \"{quote}\"".format(qid=qid,
+                                                                quote=quote)
         if name:
             quote_msg += " —{name}".format(name=name)
         if date:

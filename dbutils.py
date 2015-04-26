@@ -89,6 +89,30 @@ def add_quote(quote, *, attrib_name=None, attrib_date=None):
 
 
 @asyncio.coroutine
+def mod_quote(qid, quote, *, attrib_name=None, attrib_date=None):
+    """Modify an existing quote with optional attribution."""
+    pool = yield from get_pool()
+    with (yield from pool.cursor()) as cur:
+        query = """UPDATE quotes
+                   SET quote = %(quote)s,
+                       attrib_name = %(attrib_name)s,
+                       attrib_date = %(attrib_date)s
+                   WHERE qid = %(qid)s
+                   RETURNING qid, quote, attrib_name, attrib_date;"""
+
+        yield from cur.execute(query, {"qid": qid,
+                                       "quote": quote,
+                                       "attrib_name": attrib_name,
+                                       "attrib_date": attrib_date})
+
+        if not cur.rowcount:
+            return (None, None, None, None)
+        else:
+            (qid, quote, name, date) = yield from cur.fetchone()
+            return (qid, quote, name, date)
+
+
+@asyncio.coroutine
 def del_quote(qid):
     """Mark a single quote as deleted."""
     pool = yield from get_pool()
