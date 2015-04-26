@@ -116,7 +116,8 @@ def get_codefall_entry(user_name):
     with (yield from pool.cursor()) as cur:
         query = """SELECT cid, description, code_type
                    FROM codefall
-                   WHERE user_name = %(user_name)s AND claimed = False;"""
+                   WHERE user_name = %(user_name)s AND claimed = False
+                   ORDER BY random();"""
         yield from cur.execute(query, {"user_name": user_name})
 
         if not cur.rowcount:
