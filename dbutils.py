@@ -97,7 +97,7 @@ def mod_quote(qid, quote, *, attrib_name=None, attrib_date=None):
                    SET quote = %(quote)s,
                        attrib_name = %(attrib_name)s,
                        attrib_date = %(attrib_date)s
-                   WHERE qid = %(qid)s
+                   WHERE qid = %(qid)s AND deleted = FALSE
                    RETURNING qid, quote, attrib_name, attrib_date;"""
 
         yield from cur.execute(query, {"qid": qid,
