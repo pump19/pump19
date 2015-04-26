@@ -41,11 +41,14 @@ CMD_REGEX = {
                    "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
                    "(?: (?P<quote>.+))$"),
     "delquote":
-        re.compile("^delquote (?P<qid>\d+)$"),
+        re.compile("^delquote"
+                   "(?: (?P<qid>\d+))$"),
     "goodquote":
-        re.compile("^goodquote (?P<qid>\d+)$"),
+        re.compile("^goodquote"
+                   "(?: (?P<qid>\d+))$"),
     "badquote":
-        re.compile("^badquote (?P<qid>\d+)$"),
+        re.compile("^badquote"
+                   "(?: (?P<qid>\d+))$"),
     "codefall":
         re.compile("^codefall$"),
     "help":
