@@ -104,7 +104,7 @@ class CommandHandler:
 
         def get_route(self, string):
             for (regex, callback) in self.routes:
-                match = regex.match(string)
+                match = regex.fullmatch(string)
                 if not match:
                     continue
 
