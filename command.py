@@ -229,15 +229,16 @@ class CommandHandler:
         if not qid:
             no_quote_msg = "Could not find any matching quotes."
             yield from self.client.privmsg(target, no_quote_msg)
-        else:
-            quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                           quote=quote)
-            if name:
-                quote_msg += " —{name}".format(name=name)
-            if date:
-                quote_msg += " [{date!s}]".format(date=date)
+            return
 
-            yield from self.client.privmsg(target, quote_msg)
+        quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
+                                                       quote=quote)
+        if name:
+            quote_msg += " —{name}".format(name=name)
+        if date:
+            quote_msg += " [{date!s}]".format(date=date)
+
+        yield from self.client.privmsg(target, quote_msg)
 
     @rate_limited
     @asyncio.coroutine
@@ -350,11 +351,12 @@ class CommandHandler:
         if not secret_url:
             no_codefall_msg = "Could not find any unclaimed codes."
             yield from self.client.privmsg(target, no_codefall_msg)
-        else:
-            codefall_msg = "Codefall: {desc} ({ctype}) {url}".format(
-                    desc=description, ctype=code_type, url=secret_url)
+            return
 
-            yield from self.client.privmsg(target, codefall_msg)
+        codefall_msg = "Codefall: {desc} ({ctype}) {url}".format(
+                desc=description, ctype=code_type, url=secret_url)
+
+        yield from self.client.privmsg(target, codefall_msg)
 
     @rate_limited
     @asyncio.coroutine
