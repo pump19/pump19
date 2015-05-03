@@ -427,6 +427,7 @@ class CommandHandler:
             status = None
 
         base_msg = ("Join the LRR Minecraft Server on lrrmc.rebellious.uno! "
+                    "Check http://lrrmap.rebellious.uno/ for the dynamic map. "
                     "Current Status: {status}")
 
         if not status:
