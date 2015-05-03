@@ -14,9 +14,9 @@ import aiohttp
 import asyncio
 import bs4
 import datetime
+import dbutils
 import functools
 import logging
-import dbutils
 import re
 import twitch
 
