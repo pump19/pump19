@@ -11,6 +11,7 @@ See the file LICENSE for copying permission.
 """
 
 import aiohttp
+import aiomc
 import asyncio
 import bs4
 import datetime
@@ -57,6 +58,8 @@ CMD_REGEX = {
                    "(?: (?P<qid>\d+))$"),
     "codefall":
         re.compile("^codefall$"),
+    "lrrmc":
+        re.compile("^lrrmc$"),
     "help":
         re.compile("^help$")
 }
@@ -408,6 +411,37 @@ class CommandHandler:
                 desc=description, ctype=code_type, url=secret_url)
 
         yield from self.client.privmsg(target, codefall_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_lrrmc(self, target, nick):
+        """
+        Handle !lrrmc command.
+        Query and post the status of the LRR Minecraft server.
+        """
+        # don't stall forever when querying status
+        status_coro = aiomc.get_status("rift.dahou.se", 25575)
+        try:
+            status = yield from asyncio.wait_for(status_coro, 2.0)
+        except asyncio.TimeoutError:
+            status = None
+
+        base_msg = ("Join the LRR Minecraft Server on lrrmc.rebellious.uno! "
+                    "Current Status: {status}")
+
+        if not status:
+            no_lrrmc_msg = base_msg.format(status="Unknown")
+            yield from self.client.privmsg(target, no_lrrmc_msg)
+            return
+
+        players = status.get("players", dict())
+        nowp = players.get("online", 0)
+        maxp = players.get("max", 0)
+        status_msg = "Online - {nowp}/{maxp} players".format(nowp=nowp,
+                                                             maxp=maxp)
+
+        lrrmc_msg = base_msg.format(status=status_msg)
+        yield from self.client.privmsg(target, lrrmc_msg)
 
     @rate_limited
     @asyncio.coroutine
