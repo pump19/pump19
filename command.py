@@ -21,8 +21,9 @@ import logging
 import re
 import twitch
 
-PATREON_URL = "https://www.patreon.com/loadingreadyrun"
+CODEFALL_URL = "http://pump19.eu/codefall"
 COMMAND_URL = "http://pump19.eu/commands"
+PATREON_URL = "https://www.patreon.com/loadingreadyrun"
 QUOTEDB_URL = "http://pump19.eu/quotes/"
 
 CMD_REGEX = {
@@ -403,7 +404,9 @@ class CommandHandler:
          code_type) = yield from dbutils.get_codefall_entry(nick)
 
         if not secret_url:
-            no_codefall_msg = "Could not find any unclaimed codes."
+            no_codefall_msg = ("Could not find any unclaimed codes. "
+                               "You can add new entries at {url}.".format(
+                                   url=CODEFALL_URL))
             yield from self.client.privmsg(target, no_codefall_msg)
             return
 
