@@ -36,7 +36,10 @@ get_pool._lock = asyncio.Lock()
 
 @asyncio.coroutine
 def get_quote(*, qid=None, keyword=None, attrib=None):
-    """Get a single quote, either random or selected by qid or attribution."""
+    """
+    Get a single quote, either random or selected by qid, attribution or
+    containing a keyword.
+    """
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         if qid:

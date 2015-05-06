@@ -34,10 +34,10 @@ CMD_REGEX = {
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "quote":
         re.compile("^quote"
-                   "(?: (?:"
-                   "(?P<qid>\d+)|"
-                   "f:(?P<keyword>.+)|"
-                   "(?P<attrib>.+)))?$"),
+                   "(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?$"),
+    "findquote":
+        re.compile("^findquote"
+                   "(?: (?P<keyword>.+))$"),
     "qdb":
         re.compile("^qdb$"),
     "addquote":
@@ -53,12 +53,6 @@ CMD_REGEX = {
                    "(?: (?P<quote>.+))$"),
     "delquote":
         re.compile("^delquote"
-                   "(?: (?P<qid>\d+))$"),
-    "goodquote":
-        re.compile("^goodquote"
-                   "(?: (?P<qid>\d+))$"),
-    "badquote":
-        re.compile("^badquote"
                    "(?: (?P<qid>\d+))$"),
     "codefall":
         re.compile("^codefall$"),
@@ -228,16 +222,39 @@ class CommandHandler:
 
     @rate_limited
     @asyncio.coroutine
-    def handle_command_quote(self, target, nick, *,
-                             qid=None, keyword=None, attrib=None):
+    def handle_command_quote(self, target, nick, *, qid=None, attrib=None):
         """
-        Handle !quote [id] command.
+        Handle !quote [id|attrib] command.
         Post either the specified or a random quote.
         """
         if qid:
             qid = int(qid)
 
-        coro_quote = dbutils.get_quote(qid=qid, keyword=keyword, attrib=attrib)
+        coro_quote = dbutils.get_quote(qid=qid, attrib=attrib)
+        (qid, quote, name, date) = yield from coro_quote
+
+        if not qid:
+            no_quote_msg = "Could not find any matching quotes."
+            yield from self.client.privmsg(target, no_quote_msg)
+            return
+
+        quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
+                                                       quote=quote)
+        if name:
+            quote_msg += " —{name}".format(name=name)
+        if date:
+            quote_msg += " [{date!s}]".format(date=date)
+
+        yield from self.client.privmsg(target, quote_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_findquote(self, target, nick, *, keyword=None):
+        """
+        Handle !findquote <keyword> command.
+        Post a (random) quote containing the keyword.
+        """
+        coro_quote = dbutils.get_quote(keyword=keyword)
         (qid, quote, name, date) = yield from coro_quote
 
         if not qid:
