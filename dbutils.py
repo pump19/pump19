@@ -35,7 +35,7 @@ get_pool._lock = asyncio.Lock()
 
 
 @asyncio.coroutine
-def get_quote(*, qid=None, attrib=None):
+def get_quote(*, qid=None, keyword=None, attrib=None):
     """Get a single quote, either random or selected by qid or attribution."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
@@ -46,6 +46,15 @@ def get_quote(*, qid=None, attrib=None):
                         LIMIT 1;"""
 
             yield from cur.execute(query, {"qid": qid})
+        elif keyword:
+            query = """SELECT qid, quote, attrib_name, attrib_date
+                        FROM quotes
+                        WHERE quote ~~* %(keyword)s AND deleted = FALSE
+                        ORDER BY random()
+                        LIMIT 1;"""
+
+            search = "%{keyword}%".format(keyword=keyword)
+            yield from cur.execute(query, {"keyword": search})
         elif attrib:
             query = """SELECT qid, quote, attrib_name, attrib_date
                         FROM quotes

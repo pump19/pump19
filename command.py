@@ -34,7 +34,10 @@ CMD_REGEX = {
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "quote":
         re.compile("^quote"
-                   "(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?$"),
+                   "(?: (?:"
+                   "(?P<qid>\d+)|"
+                   "f:(?P<keyword>.+)|"
+                   "(?P<attrib>.+)))?$"),
     "qdb":
         re.compile("^qdb$"),
     "addquote":
@@ -225,7 +228,8 @@ class CommandHandler:
 
     @rate_limited
     @asyncio.coroutine
-    def handle_command_quote(self, target, nick, *, qid=None, attrib=None):
+    def handle_command_quote(self, target, nick, *,
+                             qid=None, keyword=None, attrib=None):
         """
         Handle !quote [id] command.
         Post either the specified or a random quote.
@@ -233,8 +237,8 @@ class CommandHandler:
         if qid:
             qid = int(qid)
 
-        (qid, quote, name, date) = yield from dbutils.get_quote(qid=qid,
-                                                                attrib=attrib)
+        coro_quote = dbutils.get_quote(qid=qid, keyword=keyword, attrib=attrib)
+        (qid, quote, name, date) = yield from coro_quote
 
         if not qid:
             no_quote_msg = "Could not find any matching quotes."
