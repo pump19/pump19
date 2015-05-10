@@ -12,6 +12,7 @@ See the file LICENSE for copying permission.
 
 import aiohttp
 import aiomc
+import aiomumble
 import asyncio
 import bs4
 import datetime
@@ -58,6 +59,8 @@ CMD_REGEX = {
         re.compile("^codefall$"),
     "lrrmc":
         re.compile("^lrrmc$"),
+    "mumble":
+        re.compile("^mumble$"),
     "help":
         re.compile("^help$")
 }
@@ -467,6 +470,37 @@ class CommandHandler:
 
         lrrmc_msg = base_msg.format(status=status_msg)
         yield from self.client.privmsg(target, lrrmc_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_mumble(self, target, nick):
+        """
+        Handle !mumble command.
+        Query and post the status of the LRR Mumble server.
+        """
+        # don't stall forever when querying status
+        status_coro = aiomumble.get_status("lrr.dahou.se", 64738)
+        try:
+            status = yield from asyncio.wait_for(status_coro, 2.0)
+        except asyncio.TimeoutError:
+            status = None
+
+        base_msg = ("Join the LRR Mumble Server on lrr.dahou.se! "
+                    "Current Status: {status}")
+
+        if not status:
+            no_mumble_msg = base_msg.format(status="Unknown")
+            yield from self.client.privmsg(target, no_mumble_msg)
+            return
+
+        nowu = status.get("current", 0)
+        maxu = status.get("max", 0)
+        ping = int(status.get("ping", 0))
+        status_msg = "Online - {now}/{max} users, {ping}ms".format(
+                now=nowu, max=maxu, ping=ping)
+
+        mumble_msg = base_msg.format(status=status_msg)
+        yield from self.client.privmsg(target, mumble_msg)
 
     @rate_limited
     @asyncio.coroutine

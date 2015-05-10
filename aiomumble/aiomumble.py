@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+# vim:fileencoding=utf-8:ts=8:et:sw=4:sts=4:tw=79
+
+import asyncio
+import contextlib
+import logging
+import struct
+import time
+
+"""
+aiomumble.py
+
+Query Mumble server information using asyncio.
+
+Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
+See the file LICENSE for copying permission.
+"""
+
+logger = logging.getLogger("aiomumble")
+logger.addHandler(logging.NullHandler())
+
+
+class MumblePingProtocol:
+    transport = None
+    status = None
+    done = asyncio.Event()
+
+    def connection_made(self, transport):
+        self.transport = transport
+        buf = struct.pack(">id", 0, time.monotonic())
+        self.transport.sendto(buf)
+
+    def connection_lost(self, exc):
+        pass
+
+    def datagram_received(self, data, addr):
+        logger.debug("Answer to ping request is %d bytes long.", len(data))
+        (_, t_snd, u_cur, u_max, _) = struct.unpack(">idiii", data)
+        ping = 1000 * (time.monotonic() - t_snd)
+        self.status = {"ping": ping, "current": u_cur, "max": u_max}
+        self.done.set()
+
+    @asyncio.coroutine
+    def get_status(self):
+        yield from self.done.wait()
+        return self.status
+
+
+@asyncio.coroutine
+def get_status(host, port, loop=asyncio.get_event_loop()):
+    (trans, proto) = yield from loop.create_datagram_endpoint(
+            MumblePingProtocol, remote_addr=(host, port))
+    logger.info("Established connection to %s:%d", host, port)
+
+    with contextlib.closing(trans):
+        status = yield from proto.get_status()
+        return status
