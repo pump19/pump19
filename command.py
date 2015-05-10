@@ -474,5 +474,7 @@ class CommandHandler:
         Handle !help command.
         Posts a link to the golem's list of supported commands.
         """
-        help_msg = "Help: {url}".format(url=COMMAND_URL)
+        help_msg = ("Pump19 is run by Twisted Pear. "
+                    "Check {url} for a list of supported commands.").format(
+                        url=COMMAND_URL)
         yield from self.client.privmsg(target, help_msg)
