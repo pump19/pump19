@@ -14,7 +14,6 @@ import aiohttp
 import aiomc
 import asyncio
 import bs4
-import datetime
 import dbutils
 import functools
 import logging
@@ -24,7 +23,6 @@ import twitch
 CODEFALL_URL = "http://pump19.eu/codefall"
 COMMAND_URL = "http://pump19.eu/commands"
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
-QUOTEDB_URL = "http://pump19.eu/quotes/"
 
 CMD_REGEX = {
     "patreon":
@@ -32,28 +30,6 @@ CMD_REGEX = {
     "latest":
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
-    "quote":
-        re.compile("^quote"
-                   "(?: (?:(?P<qid>\d+)|(?P<attrib>.+)))?$"),
-    "findquote":
-        re.compile("^findquote"
-                   "(?: (?P<keyword>.+))$"),
-    "qdb":
-        re.compile("^qdb$"),
-    "addquote":
-        re.compile("^addquote"
-                   "(?: \((?P<attrib_name>.+?)\))?"
-                   "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
-                   "(?: (?P<quote>.+))$"),
-    "modquote":
-        re.compile("^modquote"
-                   "(?: (?P<qid>\d+))"
-                   "(?: \((?P<attrib_name>.+?)\))?"
-                   "(?: \[(?P<attrib_date>\d{4}-[01]\d-[0-3]\d)\])?"
-                   "(?: (?P<quote>.+))$"),
-    "delquote":
-        re.compile("^delquote"
-                   "(?: (?P<qid>\d+))$"),
     "codefall":
         re.compile("^codefall$"),
     "lrrmc":
@@ -219,199 +195,6 @@ class CommandHandler:
 
             # let the feed parser announce it
             yield from self.feed.announce(feed, target=target)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_quote(self, target, nick, *, qid=None, attrib=None):
-        """
-        Handle !quote [id|attrib] command.
-        Post either the specified or a random quote.
-        """
-        if qid:
-            qid = int(qid)
-
-        coro_quote = dbutils.get_quote(qid=qid, attrib=attrib)
-        (qid, quote, name, date) = yield from coro_quote
-
-        if not qid:
-            no_quote_msg = "Could not find any matching quotes."
-            yield from self.client.privmsg(target, no_quote_msg)
-            return
-
-        quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                       quote=quote)
-        if name:
-            quote_msg += " —{name}".format(name=name)
-        if date:
-            quote_msg += " [{date!s}]".format(date=date)
-
-        yield from self.client.privmsg(target, quote_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_findquote(self, target, nick, *, keyword=None):
-        """
-        Handle !findquote <keyword> command.
-        Post a (random) quote containing the keyword.
-        """
-        coro_quote = dbutils.get_quote(keyword=keyword)
-        (qid, quote, name, date) = yield from coro_quote
-
-        if not qid:
-            no_quote_msg = "Could not find any matching quotes."
-            yield from self.client.privmsg(target, no_quote_msg)
-            return
-
-        quote_msg = "Quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                       quote=quote)
-        if name:
-            quote_msg += " —{name}".format(name=name)
-        if date:
-            quote_msg += " [{date!s}]".format(date=date)
-
-        yield from self.client.privmsg(target, quote_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_qdb(self, target, nick):
-        """
-        Handle !qdb command.
-        Posts a link to the golem's list of quotations.
-        """
-        qdb_msg = "Quote Database: {url}".format(url=QUOTEDB_URL)
-        yield from self.client.privmsg(target, qdb_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_addquote(self, target, nick, *, quote=None,
-                                attrib_name=None, attrib_date=None):
-        """
-        Handle !addquote (<attrib_name>) [<attrib_date>] <quote> command.
-        Add the provided quote to the database.
-        Only moderators may add new quotes.
-        """
-        if not quote:
-            return
-
-        if attrib_date:
-            try:
-                parsed = datetime.datetime.strptime(attrib_date, "%Y-%m-%d")
-                attrib_date = parsed.date()
-            except ValueError:
-                self.logger.error("Got invalid date string {date}.",
-                                  date=attrib_date)
-                no_quote_msg = "Could not add quote due to invalid date."
-                yield from self.client.privmsg(target, no_quote_msg)
-                return
-
-        if not (self.override == nick or
-                (yield from twitch.is_moderator("loadingreadyrun", nick))):
-            return
-
-        (qid, quote, name, date) = yield from dbutils.add_quote(
-            quote, attrib_name=attrib_name, attrib_date=attrib_date)
-
-        quote_msg = "New quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                           quote=quote)
-        if name:
-            quote_msg += " —{name}".format(name=name)
-        if date:
-            quote_msg += " [{date!s}]".format(date=date)
-
-        yield from self.client.privmsg(target, quote_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_modquote(self, target, nick, *, qid=None, quote=None,
-                                attrib_name=None, attrib_date=None):
-        """
-        Handle !modquote <qid> (<attrib_name>) [<attrib_date>] <quote> command.
-        Update the provided quote in the database.
-        Only moderators may modify quotes.
-        """
-        if not qid or not quote:
-            return
-        qid = int(qid)
-
-        if attrib_date:
-            try:
-                parsed = datetime.datetime.strptime(attrib_date, "%Y-%m-%d")
-                attrib_date = parsed.date()
-            except ValueError:
-                self.logger.error("Got invalid date string {date}.",
-                                  date=attrib_date)
-                no_quote_msg = "Could not modify quote due to invalid date."
-                yield from self.client.privmsg(target, no_quote_msg)
-                return
-
-        if not (self.override == nick or
-                (yield from twitch.is_moderator("loadingreadyrun", nick))):
-            return
-
-        (qid, quote, name, date) = yield from dbutils.mod_quote(
-            qid, quote, attrib_name=attrib_name, attrib_date=attrib_date)
-
-        if not qid:
-            no_quote_msg = "Could not modify quote."
-            yield from self.client.privmsg(target, no_quote_msg)
-            return
-
-        quote_msg = "Modified quote #{qid}: \"{quote}\"".format(qid=qid,
-                                                                quote=quote)
-        if name:
-            quote_msg += " —{name}".format(name=name)
-        if date:
-            quote_msg += " [{date!s}]".format(date=date)
-
-        yield from self.client.privmsg(target, quote_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_delquote(self, target, nick, *, qid=None):
-        """
-        Handle !delquote <qid> command.
-        Delete the provided quote ID from the database.
-        Only moderators may delete quotes.
-        """
-        if not qid:
-            return
-        qid = int(qid)
-
-        if not (self.override == nick or
-                (yield from twitch.is_moderator("loadingreadyrun", nick))):
-            return
-
-        success = yield from dbutils.del_quote(qid)
-        if success:
-            quote_msg = "Marked quote #{qid} as deleted.".format(qid=qid)
-        else:
-            quote_msg = "Could not find quote #{qid}.".format(qid=qid)
-
-        yield from self.client.privmsg(target, quote_msg)
-
-    @asyncio.coroutine
-    def handle_command_goodquote(self, target, nick, *, qid=None):
-        """
-        Handle !goodquote <qid> command.
-        Rate the provided quote ID from the database.
-        """
-        if not qid:
-            return
-        qid = int(qid)
-
-        yield from dbutils.rate_quote(qid, nick, True)
-
-    @asyncio.coroutine
-    def handle_command_badquote(self, target, nick, *, qid=None):
-        """
-        Handle !badquote <qid> command.
-        Rate the provided quote ID from the database.
-        """
-        if not qid:
-            return
-        qid = int(qid)
-
-        yield from dbutils.rate_quote(qid, nick, False)
 
     @rate_limited
     @asyncio.coroutine
