@@ -277,9 +277,7 @@ class CommandHandler:
 
         nowu = status.get("current", 0)
         maxu = status.get("max", 0)
-        ping = int(status.get("ping", 0))
-        status_msg = "Online - {now}/{max} users, {ping}ms".format(
-                now=nowu, max=maxu, ping=ping)
+        status_msg = "Online - {now}/{max} users".format(now=nowu, max=maxu)
 
         mumble_msg = base_msg.format(status=status_msg)
         yield from self.client.privmsg(target, mumble_msg)

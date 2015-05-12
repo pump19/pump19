@@ -21,9 +21,10 @@ logger.addHandler(logging.NullHandler())
 
 
 class MumblePingProtocol:
-    transport = None
-    status = None
-    done = asyncio.Event()
+    def __init__(self):
+        self.transport = None
+        self.status = None
+        self.done = asyncio.Event()
 
     def connection_made(self, transport):
         self.transport = transport
