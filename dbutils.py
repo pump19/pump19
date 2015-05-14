@@ -12,13 +12,13 @@ See the file LICENSE for copying permission.
 
 import asyncio
 import aiopg
+import skippy
 
-from Crypto.Cipher import ARC2
 from os import environ
 
 DSN = environ["DATABASE_DSN"]
 
-CODEFALL_CIPHER = ARC2.new(environ["CODEFALL_SECRET"], ARC2.MODE_ECB)
+CODEFALL_CIPHER = skippy.Skippy(environ["CODEFALL_SECRET"].encode())
 CODEFALL_SHOW_URL = environ["CODEFALL_SHOW_URL"]
 
 
@@ -49,8 +49,6 @@ def get_codefall_entry(user_name):
             return (None, None, None)
         else:
             (cid, description, code_type) = yield from cur.fetchone()
-            raw = cid.to_bytes(ARC2.block_size, byteorder="big")
-            msg = CODEFALL_CIPHER.encrypt(raw)
-            secret = int.from_bytes(msg, byteorder="big")
+            secret = CODEFALL_CIPHER.encrypt(cid)
             secret_url = CODEFALL_SHOW_URL.format(secret=secret)
             return (secret_url, description, code_type)
