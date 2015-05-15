@@ -267,7 +267,7 @@ class CommandHandler:
         except asyncio.TimeoutError:
             status = None
 
-        base_msg = ("Join the LRR Mumble Server on lrr.dahou.se! "
+        base_msg = ("Join the LRR Mumble Server on lrr.dahou.se:64738! "
                     "Current Status: {status}")
 
         if not status:
