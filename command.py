@@ -37,6 +37,10 @@ CMD_REGEX = {
         re.compile("^lrrmc$"),
     "mumble":
         re.compile("^mumble$"),
+    "rdio":
+        re.compile("^rdio (?P<user>\w+)$", re.ASCII),
+    "song":
+        re.compile("^song$"),
     "help":
         re.compile("^help$")
 }
@@ -104,7 +108,7 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, *, prefix="&", override=None):
+    def __init__(self, client, feed, rdio, *, prefix="&", override=None):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
@@ -112,6 +116,7 @@ class CommandHandler:
         self.override = override
         self.client = client
         self.feed = feed
+        self.rdio = rdio
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
 
         self.setup_routing()
@@ -281,6 +286,47 @@ class CommandHandler:
 
         mumble_msg = base_msg.format(status=status_msg)
         yield from self.client.privmsg(target, mumble_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_rdio(self, target, nick, *, user=None):
+        """
+        Handle !rdio command.
+        Query information on the provided rdio user handle and print the most
+        recently listened track.
+        """
+        coro = self.rdio.findUser(
+                vanityName=user, extras=["lastSongPlayed", "lastSongPlayTime"])
+
+        info = yield from coro
+        status, result = info.get("status"), info.get("result")
+        if status != "ok" or not result:
+            no_rdio_msg = ("Cannot query Rdio user information for "
+                           "{user}.".format(user=user))
+            yield from self.client.privmsg(target, no_rdio_msg)
+            return
+
+        first_name = result.get("firstName", user)
+        last_song = result.get("lastSongPlayed")
+        play_time = result.get("lastSongPlayTime")
+
+        rdio_msg = ("{first} listened to "
+                    "\"{track}\" by {artist} "
+                    "[{time}]").format(
+            first=first_name,
+            track=last_song.get("name", "N/A"),
+            artist=last_song.get("artist", "N/A"),
+            time=play_time)
+        yield from self.client.privmsg(target, rdio_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_song(self, target, nick):
+        """
+        Handle !song command.
+        This basically is a shorthand for !rdio jameslrr.
+        """
+        yield from self.handle_command_rdio(target, nick, user="jameslrr")
 
     @rate_limited
     @asyncio.coroutine

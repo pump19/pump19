@@ -17,6 +17,7 @@ import config
 import logging
 import lrrfeed
 import protocol
+import rdio
 import signal
 
 LOG_FORMAT = "{levelname}({name}): {message}"
@@ -35,9 +36,12 @@ def main():
     feed = lrrfeed.LRRFeedParser(client, **feed_config)
     feed.start()
 
+    rdio_config = config.get_config("rdio")
+    rdio_client = rdio.Rdio(**rdio_config)
+
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, feed, **cmdhdl_config)
+    command.CommandHandler(client, feed, rdio_client, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")

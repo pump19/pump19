@@ -3,4 +3,5 @@ aiopg==0.7.0
 beautifulsoup4==4.3.2
 bottom==0.9.13
 feedparser==5.2.0
-http://git.io/vUS0t
+oauthlib==0.7.2
+http://git.io/vUS0t  # Skippy

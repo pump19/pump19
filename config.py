@@ -43,6 +43,12 @@ def __get_rss_config():
     return {"delay": int(environ.get("PUMP19_RSS_DELAY", 300))}
 
 
+def __get_rdio_config():
+    """Get key and secret for the Rdio API."""
+    return {"key": environ["PUMP19_RDIO_API_KEY"],
+            "secret": environ["PUMP19_RDIO_API_SECRET"]}
+
+
 def get_config(component):
     """
     Get a configuration dictionary for a specific component.
@@ -55,6 +61,8 @@ def get_config(component):
         return __get_cmd_config()
     elif component == "rss":
         return __get_rss_config()
+    elif component == "rdio":
+        return __get_rdio_config()
 
     # we don't know that config
     raise KeyError("No such component: {0}".format(component))
