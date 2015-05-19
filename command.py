@@ -310,6 +310,12 @@ class CommandHandler:
         last_song = result.get("lastSongPlayed")
         play_time = result.get("lastSongPlayTime")
 
+        if not last_song:
+            no_rdio_msg = ("Cannot query most recently played track for "
+                           "{user}.".format(user=user))
+            yield from self.client.privmsg(target, no_rdio_msg)
+            return
+
         rdio_msg = ("{first} listened to "
                     "\"{track}\" by {artist} "
                     "[{time}]").format(
