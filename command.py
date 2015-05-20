@@ -20,6 +20,7 @@ import functools
 import logging
 import re
 import twitch
+import utils
 
 CODEFALL_URL = "http://pump19.eu/codefall"
 COMMAND_URL = "http://pump19.eu/commands"
@@ -39,6 +40,8 @@ CMD_REGEX = {
         re.compile("^mumble$"),
     "rdio":
         re.compile("^rdio (?P<user>\w+)$", re.ASCII),
+    "lastfm":
+        re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "song":
         re.compile("^song$"),
     "help":
@@ -324,6 +327,40 @@ class CommandHandler:
             artist=last_song.get("artist", "N/A"),
             time=play_time)
         yield from self.client.privmsg(target, rdio_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_lastfm(self, target, nick, *, user=None):
+        """
+        Handle !last.fm command.
+        Query information on the provided last.fm user handle and print the
+        most recently listened track.
+        """
+        coro = utils.get_lastfm_info(user)
+
+        info = yield from coro
+        if not info:
+            no_lastfm_msg = ("Cannot query last.fm user information for "
+                             "{user}.".format(user=user))
+            yield from self.client.privmsg(target, no_lastfm_msg)
+            return
+
+        name = info.get("name")
+        live = info.get("live")
+        track = info.get("track")
+        artist = info.get("artist")
+
+        if not track and not artist:
+            no_lastfm_msg = ("Cannot query most recently played track for "
+                             "{name}.".format(name=name))
+            yield from self.client.privmsg(target, no_lastfm_msg)
+            return
+
+        tempus = "is listening" if live else "last listened"
+
+        lastfm_msg = "{name} {tempus} to \"{track}\" by {artist}".format(
+                name=name, tempus=tempus, track=track, artist=artist)
+        yield from self.client.privmsg(target, lastfm_msg)
 
     @rate_limited
     @asyncio.coroutine
