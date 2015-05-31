@@ -175,14 +175,14 @@ def get_streamer():
         "get", STREAM_URL,
         headers={"Accept": "application/vnd.twitchtv.v3+json"})
     stream_dict = yield from stream_req.json()
-    stream = stream_dict.get("stream", {})
+    stream = stream_dict.get("stream")
     if not stream:
         return Streamers.Offline
 
     # check stream.channel.status for current show
-    channel = stream.get("channel", {})
-    status = channel.get("status")
-    if not status:
+    try:
+        status = stream["channel"]["status"]
+    except (KeyError, TypeError):
         return Streamers.Unknown
 
     # let's see if we can find the current show
