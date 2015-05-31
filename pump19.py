@@ -17,8 +17,8 @@ import config
 import logging
 import lrrfeed
 import protocol
-import rdio
 import signal
+import songs
 
 LOG_FORMAT = "{levelname}({name}): {message}"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, style="{")
@@ -37,7 +37,7 @@ def main():
     feed.start()
 
     rdio_config = config.get_config("rdio")
-    rdio_client = rdio.Rdio(**rdio_config)
+    rdio_client = songs.Rdio(**rdio_config)
 
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance

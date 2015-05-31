@@ -20,8 +20,8 @@ import functools
 import logging
 import random
 import re
+import songs
 import twitch
-import utils
 
 CODEFALL_URL = "http://pump19.eu/codefall"
 COMMAND_URL = "http://pump19.eu/commands"
@@ -333,7 +333,7 @@ class CommandHandler:
         Query information on the provided last.fm user handle and print the
         most recently listened track.
         """
-        coro = utils.get_lastfm_info(user)
+        coro = songs.get_lastfm_info(user)
 
         info = yield from coro
         if not info:
