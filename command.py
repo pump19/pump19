@@ -254,9 +254,12 @@ class CommandHandler:
             yield from self.client.privmsg(target, no_lrrmc_msg)
             return
 
-        players = status.get("players", dict())
-        nowp = players.get("online", 0)
-        maxp = players.get("max", 0)
+        try:
+            nowp = status["players"]["online"]
+            maxp = status["players"]["max"]
+        except (KeyError, TypeError):
+            nowp = maxp = "?"
+
         status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
 
         lrrmc_msg = base_msg.format(status=status_msg)
