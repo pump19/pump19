@@ -18,6 +18,7 @@ import bs4
 import dbutils
 import functools
 import logging
+import random
 import re
 import twitch
 import utils
@@ -311,7 +312,6 @@ class CommandHandler:
 
         first_name = result.get("firstName", user)
         last_song = result.get("lastSongPlayed")
-        play_time = result.get("lastSongPlayTime")
 
         if not last_song:
             no_rdio_msg = ("Cannot query most recently played track for "
@@ -319,13 +319,10 @@ class CommandHandler:
             yield from self.client.privmsg(target, no_rdio_msg)
             return
 
-        rdio_msg = ("{first} listened to "
-                    "\"{track}\" by {artist} "
-                    "[{time}]").format(
-            first=first_name,
+        rdio_msg = "{name} last listened to \"{track}\" by {artist}".format(
+            name=first_name,
             track=last_song.get("name", "N/A"),
-            artist=last_song.get("artist", "N/A"),
-            time=play_time)
+            artist=last_song.get("artist", "N/A"))
         yield from self.client.privmsg(target, rdio_msg)
 
     @rate_limited
@@ -367,9 +364,43 @@ class CommandHandler:
     def handle_command_song(self, target, nick):
         """
         Handle !song command.
-        This basically is a shorthand for !rdio jameslrr.
+        This tries to determine the current streamer and prints their most
+        recently listened song.
         """
-        yield from self.handle_command_rdio(target, nick, user="jameslrr")
+        streamer = yield from twitch.get_streamer()
+        if streamer is twitch.Streamers.Offline:
+            no_song_msg = "The stream is offline. Please try again later."
+            yield from self.client.privmsg(target, no_song_msg)
+            return
+
+        # if we found more than one streamer, get a random one
+        if isinstance(streamer, list):
+            streamer = random.choice(streamer)
+
+        if streamer is twitch.Streamers.Unknown:
+            no_song_msg = ("I cannot determine the current streamer. Better "
+                           "luck next time.")
+            yield from self.client.privmsg(target, no_song_msg)
+        elif streamer is twitch.Streamers.Adam:
+            yield from self.handle_command_rdio(
+                    target, nick, user="seabats")
+        elif streamer is twitch.Streamers.Cameron:
+            yield from self.handle_command_rdio(
+                    target, nick, user="therealmofsoftdelusions")
+        elif streamer is twitch.Streamers.Ian:
+            yield from self.handle_command_lastfm(
+                    target, nick, user="ihorner")
+        elif streamer is twitch.Streamers.James:
+            yield from self.handle_command_rdio(
+                    target, nick, user="jameslrr")
+        elif streamer is twitch.Streamers.Kathleen:
+            yield from self.handle_command_rdio(
+                    target, nick, user="Kathleen_LRR")
+        else:
+            no_song_msg = ("I don't know how to stalk {name} yet. Encourage "
+                           "them to use last.fm or a similar service.".format(
+                               name=streamer.name))
+            yield from self.client.privmsg(target, no_song_msg)
 
     @rate_limited
     @asyncio.coroutine
