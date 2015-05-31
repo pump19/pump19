@@ -6,7 +6,7 @@ dbutils.py
 
 Various database driven utility functions.
 
-Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
+Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 

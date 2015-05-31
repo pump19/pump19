@@ -7,7 +7,7 @@ pump19.py
 The Pump19 IRC Golem entry point.
 It sets up logging and starts up the IRC client.
 
-Copyright (c) 2015 Twisted Pear <pear at twistedpear dot at>
+Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 
