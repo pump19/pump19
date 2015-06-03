@@ -55,7 +55,8 @@ def main():
 
     # before we stop the event loop, make sure all tasks are done
     pending = asyncio.Task.all_tasks(loop)
-    loop.run_until_complete(asyncio.wait(pending, timeout=5))
+    if pending:
+        loop.run_until_complete(asyncio.wait(pending, timeout=5))
 
     loop.close()
     logger.info("Protocol activity ceased.")
