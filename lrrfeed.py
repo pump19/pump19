@@ -56,19 +56,16 @@ class LRRFeedParser:
 
     def stop(self):
         """Stop automatic update tasks."""
-        tasks = []
         for feed in RSS_FEEDS.keys():
             if feed in self.updater:
                 task = self.updater[feed]["task"]
                 task.cancel()
-                tasks.append(task)
                 del self.updater[feed]
             else:
                 self.logger.warning("Automatic update for RSS feed {0} is "
                                     "not running.".format(feed))
 
         self.logger.info("Waiting for automatic update to finish.")
-        asyncio.wait(tasks)
 
     @asyncio.coroutine
     def auto_update(self, feed):

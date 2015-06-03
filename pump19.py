@@ -52,6 +52,11 @@ def main():
     logger.info("Running protocol activity.")
     task = client.run()
     loop.run_until_complete(task)
+
+    # before we stop the event loop, make sure all tasks are done
+    pending = asyncio.Task.all_tasks(loop)
+    loop.run_until_complete(asyncio.wait(pending, timeout=5))
+
     loop.close()
     logger.info("Protocol activity ceased.")
     logger.info("Exiting...")
