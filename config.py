@@ -45,8 +45,8 @@ def __get_rss_config():
 
 def __get_rdio_config():
     """Get key and secret for the Rdio API."""
-    return {"key": environ["PUMP19_RDIO_API_KEY"],
-            "secret": environ["PUMP19_RDIO_API_SECRET"]}
+    return {"client_id": environ["PUMP19_RDIO_API_CLIENT_ID"],
+            "client_secret": environ["PUMP19_RDIO_API_CLIENT_SECRET"]}
 
 
 def get_config(component):

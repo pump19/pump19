@@ -12,7 +12,6 @@ See the file LICENSE for copying permission.
 
 import aiohttp
 import asyncio
-import oauthlib.oauth1
 import xml.etree.ElementTree as ET
 
 from os import environ
@@ -20,30 +19,44 @@ from urllib.parse import urlencode
 
 LAST_FM_API_KEY = environ["LAST_FM_API_KEY"]
 LAST_FM_API_URL = "http://ws.audioscrobbler.com/2.0/"
-RDIO_API_URL = "http://api.rdio.com/1/"
+RDIO_TOKEN_ENDPOINT = "https://services.rdio.com/oauth2/token"
+RDIO_RESOURCE_ENDPOINT = "https://services.rdio.com/api/1/"
 
 
 class Rdio:
     """Simple rdio API client."""
 
-    def __init__(self, key, secret):
-        """Setup an OAUTH1 client instance with supplied credentials."""
-        self._client = oauthlib.oauth1.Client(key, client_secret=secret)
+    def __init__(self, client_id, client_secret, loop=None):
+        """Setup an OAUTH2 client instance with supplied credentials."""
+        # we'll need those credentials for getting access tokens
+        self.credentials = aiohttp.BasicAuth(client_id, client_secret)
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        self.client = aiohttp.ClientSession(loop=loop, headers=headers)
 
     @asyncio.coroutine
-    def oauth_POST(self, method, params, headers=dict()):
-        """Send an oauth signed POST call and return a aiorequest object."""
-        # we need to add the API method itself
+    def get_access_token(self):
+        """Get an access token using the Client Credentials method."""
+        data = {"grant_type": "client_credentials"}
+        token_resp = yield from self.client.post(
+                RDIO_TOKEN_ENDPOINT, data=data, auth=self.credentials)
+
+        token_data = yield from token_resp.json()
+        token = token_data.get("access_token")
+        return token
+
+    @asyncio.coroutine
+    def oauth_POST(self, method, params):
+        """Send an authenticated POST call and return a aiorequest object."""
+        # first we need to get an access token
+        token = yield from self.get_access_token()
+
+        # we need to add the token and the method itself
+        params["access_token"] = token
         params["method"] = method
 
-        # we want to pass a dict, so we need to set the Content-Type
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-        # create a signed request
-        uri, headers, body = self._client.sign(
-                RDIO_API_URL, http_method="POST", body=params, headers=headers)
-        request = yield from aiohttp.request(
-                "POST", uri, data=body, headers=headers)
+        request = yield from self.client.post(
+                RDIO_RESOURCE_ENDPOINT, data=params)
 
         return request
 
