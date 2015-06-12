@@ -172,8 +172,29 @@ class CommandHandler:
         tag_earnings = patreon_soup.find("span", id="totalEarnings")
         total_earnings = tag_earnings.string if tag_earnings else "N/A"
 
-        patreon_msg = "{0} patrons for a total of ${1} per month. {2}".format(
-            nof_patrons, total_earnings, PATREON_URL)
+        # try to find the next unmet goal (if any)
+        next_goal_title = next_goal_target = None
+        tag_next_goal = patreon_soup.find("div", class_="earnings goal unmet")
+        if tag_next_goal:
+            tag_next_header = tag_next_goal.find("div", class_="goalheader")
+            if tag_next_header:
+                next_goal_title = str(tag_next_header.string).strip()
+
+            tag_next_target = tag_next_goal.find("span", id="totalEarnings")
+            if tag_next_target:
+                next_goal_target = str(tag_next_target.string).strip()
+
+        if next_goal_title and next_goal_target:
+            patreon_msg = ("{0} patrons for a total of ${1} per month. "
+                           "Next goal \"{2}\" at {3}. "
+                           "{4}".format(
+                               nof_patrons, total_earnings,
+                               next_goal_title, next_goal_target,
+                               PATREON_URL))
+        else:
+            patreon_msg = ("{0} patrons for a total of ${1} per month. "
+                           "{2}".format(
+                               nof_patrons, total_earnings, PATREON_URL))
 
         yield from self.client.privmsg(target, patreon_msg)
 
