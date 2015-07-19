@@ -22,7 +22,12 @@ logger.addHandler(logging.NullHandler())
 
 @asyncio.coroutine
 def get_status(host, port):
-    (rd, wr) = yield from asyncio.open_connection(host, port)
+    try:
+        (rd, wr) = yield from asyncio.open_connection(host, port)
+    except OSError:
+        logger.error("Error connecting to %s:%d", host, port)
+        return None
+
     logger.info("Established connection to %s:%d", host, port)
 
     packet = protocol.handshake(host, port)
