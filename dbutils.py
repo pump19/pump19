@@ -35,20 +35,25 @@ get_pool._lock = asyncio.Lock()
 
 
 @asyncio.coroutine
-def get_codefall_entry(user_name):
-    """Get a codefall entry added by a given user."""
+def get_codefall_entries(user_name, limit=1):
+    """Get a list of unclaimed codefall entries added by a given user."""
     pool = yield from get_pool()
     with (yield from pool.cursor()) as cur:
         query = """SELECT cid, description, code_type
                    FROM codefall
                    WHERE user_name = %(user_name)s AND claimed = False
-                   ORDER BY random();"""
-        yield from cur.execute(query, {"user_name": user_name})
+                   ORDER BY random()
+                   LIMIT %(limit)s;"""
+        yield from cur.execute(
+                query, {"user_name": user_name, "limit": limit})
 
         if not cur.rowcount:
-            return (None, None, None)
+            return list()
         else:
-            (cid, description, code_type) = yield from cur.fetchone()
-            secret = CODEFALL_CIPHER.encrypt(cid)
-            secret_url = CODEFALL_SHOW_URL.format(secret=secret)
-            return (secret_url, description, code_type)
+            entries = list()
+            results = yield from cur.fetchall()
+            for (cid, description, code_type) in results:
+                secret = CODEFALL_CIPHER.encrypt(cid)
+                secret_url = CODEFALL_SHOW_URL.format(secret=secret)
+                entries.append((secret_url, description, code_type))
+            return entries

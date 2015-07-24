@@ -34,7 +34,7 @@ CMD_REGEX = {
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "codefall":
-        re.compile("^codefall$"),
+        re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrmc":
         re.compile("^lrrmc$"),
     "mumble":
@@ -231,24 +231,24 @@ class CommandHandler:
 
     @rate_limited
     @asyncio.coroutine
-    def handle_command_codefall(self, target, nick):
+    def handle_command_codefall(self, target, nick, *, limit=None):
         """
-        Handle !codefall command.
+        Handle !codefall [limit] command.
         If available, post a single unclaimed codefall URL.
         """
-        (secret_url,
-         description,
-         code_type) = yield from dbutils.get_codefall_entry(nick)
+        limit = min(int(limit), 3) if limit else 1
 
-        if not secret_url:
+        entries = yield from dbutils.get_codefall_entries(nick, limit)
+
+        if not entries:
             no_codefall_msg = ("Could not find any unclaimed codes. "
                                "You can add new entries at {url}.".format(
                                    url=CODEFALL_URL))
             yield from self.client.privmsg(target, no_codefall_msg)
             return
 
-        codefall_msg = "Codefall: {desc} ({ctype}) {url}".format(
-                desc=description, ctype=code_type, url=secret_url)
+        entry_msgs = ("{1} ({2}) {0}".format(*entry) for entry in entries)
+        codefall_msg = "Codefall | {0}".format(" | ".join(entry_msgs))
 
         yield from self.client.privmsg(target, codefall_msg)
 
