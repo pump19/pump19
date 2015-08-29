@@ -45,6 +45,7 @@ def main():
 
     def shutdown():
         logger.info("Shutdown signal received.")
+        rdio_client.close()
         feed.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)

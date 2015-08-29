@@ -34,6 +34,9 @@ class Rdio:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         self.client = aiohttp.ClientSession(loop=loop, headers=headers)
 
+    def close(self):
+        self.client.close()
+
     @asyncio.coroutine
     def get_access_token(self):
         """Get an access token using the Client Credentials method."""
