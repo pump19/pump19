@@ -165,7 +165,7 @@ class CommandHandler:
         """
         patreon_req = yield from aiohttp.request("get", PATREON_URL)
         patreon_body = yield from patreon_req.read()
-        patreon_soup = bs4.BeautifulSoup(patreon_body)
+        patreon_soup = bs4.BeautifulSoup(patreon_body, "html.parser")
         tag_patrons = patreon_soup.find("div", id="totalPatrons")
         if tag_patrons:
             nof_patrons = tag_patrons.string
