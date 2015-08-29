@@ -167,10 +167,18 @@ class CommandHandler:
         patreon_body = yield from patreon_req.read()
         patreon_soup = bs4.BeautifulSoup(patreon_body)
         tag_patrons = patreon_soup.find("div", id="totalPatrons")
-        nof_patrons = tag_patrons.string if tag_patrons else "N/A"
+        if tag_patrons:
+            nof_patrons = tag_patrons.string
+            nof_patrons = nof_patrons.strip()
+        else:
+            nof_patrons = "N/A"
 
         tag_earnings = patreon_soup.find("span", id="totalEarnings")
-        total_earnings = tag_earnings.string if tag_earnings else "N/A"
+        if tag_earnings:
+            total_earnings = tag_earnings.string
+            total_earnings = total_earnings.strip()
+        else:
+            total_earnings = "N/A"
 
         # try to find the next unmet goal (if any)
         next_goal_title = next_goal_target = None
@@ -185,14 +193,14 @@ class CommandHandler:
                 next_goal_target = str(tag_next_target.string).strip()
 
         if next_goal_title and next_goal_target:
-            patreon_msg = ("{0} patrons for a total of ${1} per month. "
+            patreon_msg = ("{0} patrons for a total of {1} per month. "
                            "Next goal \"{2}\" at {3}. "
                            "{4}".format(
                                nof_patrons, total_earnings,
                                next_goal_title, next_goal_target,
                                PATREON_URL))
         else:
-            patreon_msg = ("{0} patrons for a total of ${1} per month. "
+            patreon_msg = ("{0} patrons for a total of {1} per month. "
                            "{2}".format(
                                nof_patrons, total_earnings, PATREON_URL))
 
