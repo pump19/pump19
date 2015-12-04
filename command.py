@@ -23,8 +23,8 @@ import re
 import songs
 import twitch
 
-CODEFALL_URL = "http://pump19.eu/codefall"
-COMMAND_URL = "http://pump19.eu/commands"
+CODEFALL_URL = "https://pump19.eu/codefall"
+COMMAND_URL = "https://pump19.eu/commands"
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
 
 CMD_REGEX = {
