@@ -14,9 +14,9 @@ import aiohttp
 import aiomc
 import aiomumble
 import asyncio
-import bs4
 import dbutils
 import functools
+import locale
 import logging
 import random
 import re
@@ -26,6 +26,7 @@ import twitch
 CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
 PATREON_URL = "https://www.patreon.com/loadingreadyrun"
+PATREON_API = "https://api.patreon.com/campaigns/112364"
 
 CMD_REGEX = {
     "patreon":
@@ -48,6 +49,9 @@ CMD_REGEX = {
     "help":
         re.compile("^help$")
 }
+
+# set up locale for currency formatting (patreon command wants that)
+locale.setlocale(locale.LC_MONETARY, "en_US.utf8")
 
 
 class CommandHandler:
@@ -163,46 +167,25 @@ class CommandHandler:
         Handle !patreon command.
         Post the number of patrons and the total earnings per month.
         """
-        patreon_req = yield from aiohttp.request("get", PATREON_URL)
-        patreon_body = yield from patreon_req.read()
-        patreon_soup = bs4.BeautifulSoup(patreon_body, "html.parser")
-        tag_patrons = patreon_soup.find("div", id="totalPatrons")
-        if tag_patrons:
-            nof_patrons = tag_patrons.string
-            nof_patrons = nof_patrons.strip()
-        else:
-            nof_patrons = "N/A"
+        patreon_req = yield from aiohttp.request("get", PATREON_API)
+        patreon_dict = yield from patreon_req.json()
+        patreon_data = patreon_dict.get("data")
+        if not patreon_data:
+            no_patreon_msg = ("Could not retrieve Patreon data. Check out the "
+                              "campaign at {0}").format(PATREON_URL)
+            yield from self.client.privmsg(target, no_patreon_msg)
+            return
 
-        tag_earnings = patreon_soup.find("span", id="totalEarnings")
-        if tag_earnings:
-            total_earnings = tag_earnings.string
-            total_earnings = total_earnings.strip()
+        nof_patrons = patreon_data.get("patron_count", "N/A")
+        pledge_sum = patreon_data.get("pledge_sum")
+        if pledge_sum:
+            pledge_sum = int(pledge_sum) / 100  # stored in cents
+            total_earnings = locale.currency(pledge_sum, grouping=True)
         else:
             total_earnings = "N/A"
 
-        # try to find the next unmet goal (if any)
-        next_goal_title = next_goal_target = None
-        tag_next_goal = patreon_soup.find("div", class_="earnings goal unmet")
-        if tag_next_goal:
-            tag_next_header = tag_next_goal.find("div", class_="goalheader")
-            if tag_next_header:
-                next_goal_title = str(tag_next_header.string).strip()
-
-            tag_next_target = tag_next_goal.find("span", id="totalEarnings")
-            if tag_next_target:
-                next_goal_target = str(tag_next_target.string).strip()
-
-        if next_goal_title and next_goal_target:
-            patreon_msg = ("{0} patrons for a total of {1} per month. "
-                           "Next goal \"{2}\" at {3}. "
-                           "{4}".format(
-                               nof_patrons, total_earnings,
-                               next_goal_title, next_goal_target,
-                               PATREON_URL))
-        else:
-            patreon_msg = ("{0} patrons for a total of {1} per month. "
-                           "{2}".format(
-                               nof_patrons, total_earnings, PATREON_URL))
+        patreon_msg = ("{0} patrons for a total of {1} per month. "
+                       "{2}".format(nof_patrons, total_earnings, PATREON_URL))
 
         yield from self.client.privmsg(target, patreon_msg)
 

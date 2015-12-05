@@ -1,6 +1,5 @@
 aiohttp==0.17.3
 aiopg==0.7.0
-beautifulsoup4==4.4.0
 bottom==0.9.13
 feedparser==5.2.1
 http://git.io/vUS0t  # Skippy
