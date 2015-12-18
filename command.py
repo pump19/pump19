@@ -40,8 +40,6 @@ CMD_REGEX = {
         re.compile("^lrrmc$"),
     "mumble":
         re.compile("^mumble$"),
-    "rdio":
-        re.compile("^rdio (?P<user>\w+)$", re.ASCII),
     "lastfm":
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "song":
@@ -116,7 +114,7 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, rdio, *, prefix="&", override=None):
+    def __init__(self, client, feed, *, prefix="&", override=None):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
@@ -124,7 +122,6 @@ class CommandHandler:
         self.override = override
         self.client = client
         self.feed = feed
-        self.rdio = rdio
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
 
         self.setup_routing()
@@ -308,40 +305,6 @@ class CommandHandler:
 
     @rate_limited
     @asyncio.coroutine
-    def handle_command_rdio(self, target, nick, *, user=None):
-        """
-        Handle !rdio command.
-        Query information on the provided rdio user handle and print the most
-        recently listened track.
-        """
-        coro = self.rdio.findUser(
-                vanityName=user, extras=["lastSongPlayed", "lastSongPlayTime"])
-
-        info = yield from coro
-        status, result = info.get("status"), info.get("result")
-        if status != "ok" or not result:
-            no_rdio_msg = ("Cannot query Rdio user information for "
-                           "{user}.".format(user=user))
-            yield from self.client.privmsg(target, no_rdio_msg)
-            return
-
-        first_name = result.get("firstName", user)
-        last_song = result.get("lastSongPlayed")
-
-        if not last_song:
-            no_rdio_msg = ("Cannot query most recently played track for "
-                           "{user}.".format(user=user))
-            yield from self.client.privmsg(target, no_rdio_msg)
-            return
-
-        rdio_msg = "{name} last listened to \"{track}\" by {artist}".format(
-            name=first_name,
-            track=last_song.get("name", "N/A"),
-            artist=last_song.get("artist", "N/A"))
-        yield from self.client.privmsg(target, rdio_msg)
-
-    @rate_limited
-    @asyncio.coroutine
     def handle_command_lastfm(self, target, nick, *, user=None):
         """
         Handle !last.fm command.
@@ -396,21 +359,9 @@ class CommandHandler:
             no_song_msg = ("I cannot determine the current streamer. Better "
                            "luck next time.")
             yield from self.client.privmsg(target, no_song_msg)
-        elif streamer is twitch.Streamers.Adam:
-            yield from self.handle_command_rdio(
-                    target, nick, user="seabats")
-        elif streamer is twitch.Streamers.Cameron:
-            yield from self.handle_command_rdio(
-                    target, nick, user="therealmofsoftdelusions")
         elif streamer is twitch.Streamers.Ian:
             yield from self.handle_command_lastfm(
                     target, nick, user="ihorner")
-        elif streamer is twitch.Streamers.James:
-            yield from self.handle_command_rdio(
-                    target, nick, user="jameslrr")
-        elif streamer is twitch.Streamers.Kathleen:
-            yield from self.handle_command_rdio(
-                    target, nick, user="Kathleen_LRR")
         else:
             no_song_msg = ("I don't know how to stalk {name} yet. Encourage "
                            "them to use last.fm or a similar service.".format(

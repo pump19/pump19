@@ -18,7 +18,6 @@ import logging
 import lrrfeed
 import protocol
 import signal
-import songs
 
 LOG_FORMAT = "{levelname}({name}): {message}"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, style="{")
@@ -36,16 +35,12 @@ def main():
     feed = lrrfeed.LRRFeedParser(client, **feed_config)
     feed.start()
 
-    rdio_config = config.get_config("rdio")
-    rdio_client = songs.Rdio(loop=loop, **rdio_config)
-
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, feed, rdio_client, **cmdhdl_config)
+    command.CommandHandler(client, feed, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
-        rdio_client.close()
         feed.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
