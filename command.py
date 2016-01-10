@@ -38,6 +38,8 @@ CMD_REGEX = {
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrmc":
         re.compile("^lrrmc$"),
+    "lrrftb":
+        re.compile("^lrrftb$"),
     "mumble":
         re.compile("^mumble$"),
     "lastfm":
@@ -256,6 +258,40 @@ class CommandHandler:
 
         base_msg = ("Join the LRR Minecraft Server on lrrmc.rebellious.uno! "
                     "Check http://lrrmap.rebellious.uno/ for the dynamic map. "
+                    "Current Status: {status}")
+
+        if not status:
+            no_lrrmc_msg = base_msg.format(status="Unknown")
+            yield from self.client.privmsg(target, no_lrrmc_msg)
+            return
+
+        try:
+            nowp = status["players"]["online"]
+            maxp = status["players"]["max"]
+        except (KeyError, TypeError):
+            nowp = maxp = "?"
+
+        status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
+
+        lrrmc_msg = base_msg.format(status=status_msg)
+        yield from self.client.privmsg(target, lrrmc_msg)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_lrrftb(self, target, nick):
+        """
+        Handle !lrrftb command.
+        Query and post the status of the modded Minecraft server.
+        """
+        # don't stall forever when querying status
+        status_coro = aiomc.get_status("107.172.159.23", 25565)
+        try:
+            status = yield from asyncio.wait_for(status_coro, 2.0)
+        except asyncio.TimeoutError:
+            status = None
+
+        base_msg = ("Join the modded Minecraft Server on ftb.lrrcraft.com! "
+                    "We're playing FTB Infinity Evolved. "
                     "Current Status: {status}")
 
         if not status:
