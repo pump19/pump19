@@ -291,7 +291,8 @@ class CommandHandler:
             status = None
 
         base_msg = ("Join the modded Minecraft Server on ftb.lrrcraft.com! "
-                    "We're playing FTB Infinity Evolved. "
+                    "We're playing FTB Infinity Evolved v2.2.2. "
+                    "Check http://ftb.lrrcraft.com:8080/ for the dynamic map. "
                     "Current Status: {status}")
 
         if not status:
