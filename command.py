@@ -10,7 +10,6 @@ Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 
-import aiohttp
 import aiomc
 import aiomumble
 import asyncio
@@ -18,34 +17,25 @@ import dbutils
 import functools
 import locale
 import logging
-import random
 import re
 import songs
 import twitch
 
 CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
-PATREON_URL = "https://www.patreon.com/loadingreadyrun"
-PATREON_API = "https://api.patreon.com/campaigns/112364"
 
 CMD_REGEX = {
-    "patreon":
-        re.compile("^patreon$"),
     "latest":
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
-    "lrrmc":
-        re.compile("^lrrmc$"),
     "lrrftb":
         re.compile("^lrrftb$"),
     "mumble":
         re.compile("^mumble$"),
     "lastfm":
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
-    "song":
-        re.compile("^song$"),
     "help":
         re.compile("^help$")
 }
@@ -161,35 +151,6 @@ class CommandHandler:
 
     @rate_limited
     @asyncio.coroutine
-    def handle_command_patreon(self, target, nick):
-        """
-        Handle !patreon command.
-        Post the number of patrons and the total earnings per month.
-        """
-        patreon_req = yield from aiohttp.request("get", PATREON_API)
-        patreon_dict = yield from patreon_req.json()
-        patreon_data = patreon_dict.get("data")
-        if not patreon_data:
-            no_patreon_msg = ("Could not retrieve Patreon data. Check out the "
-                              "campaign at {0}").format(PATREON_URL)
-            yield from self.client.privmsg(target, no_patreon_msg)
-            return
-
-        nof_patrons = patreon_data.get("patron_count", "N/A")
-        pledge_sum = patreon_data.get("pledge_sum")
-        if pledge_sum:
-            pledge_sum = int(pledge_sum) / 100  # stored in cents
-            total_earnings = locale.currency(pledge_sum, grouping=True)
-        else:
-            total_earnings = "N/A"
-
-        patreon_msg = ("{0} patrons for a total of {1} per month. "
-                       "{2}".format(nof_patrons, total_earnings, PATREON_URL))
-
-        yield from self.client.privmsg(target, patreon_msg)
-
-    @rate_limited
-    @asyncio.coroutine
     def handle_command_latest(self, target, nick, *, feed=None):
         """
         Handle !latest [video|podcast|broadcast|highlight] command.
@@ -241,40 +202,6 @@ class CommandHandler:
         codefall_msg = "Codefall | {0}".format(" | ".join(entry_msgs))
 
         yield from self.client.privmsg(target, codefall_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_lrrmc(self, target, nick):
-        """
-        Handle !lrrmc command.
-        Query and post the status of the LRR Minecraft server.
-        """
-        # don't stall forever when querying status
-        status_coro = aiomc.get_status("rift.dahou.se", 25575)
-        try:
-            status = yield from asyncio.wait_for(status_coro, 2.0)
-        except asyncio.TimeoutError:
-            status = None
-
-        base_msg = ("Join the LRR Minecraft Server on lrrmc.rebellious.uno! "
-                    "Check http://lrrmap.rebellious.uno/ for the dynamic map. "
-                    "Current Status: {status}")
-
-        if not status:
-            no_lrrmc_msg = base_msg.format(status="Unknown")
-            yield from self.client.privmsg(target, no_lrrmc_msg)
-            return
-
-        try:
-            nowp = status["players"]["online"]
-            maxp = status["players"]["max"]
-        except (KeyError, TypeError):
-            nowp = maxp = "?"
-
-        status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
-
-        lrrmc_msg = base_msg.format(status=status_msg)
-        yield from self.client.privmsg(target, lrrmc_msg)
 
     @rate_limited
     @asyncio.coroutine
@@ -372,37 +299,6 @@ class CommandHandler:
         lastfm_msg = "{name} {tempus} to \"{track}\" by {artist}".format(
                 name=name, tempus=tempus, track=track, artist=artist)
         yield from self.client.privmsg(target, lastfm_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_song(self, target, nick):
-        """
-        Handle !song command.
-        This tries to determine the current streamer and prints their most
-        recently listened song.
-        """
-        streamer = yield from twitch.get_streamer()
-        if streamer is twitch.Streamers.Offline:
-            no_song_msg = "The stream is offline. Please try again later."
-            yield from self.client.privmsg(target, no_song_msg)
-            return
-
-        # if we found more than one streamer, get a random one
-        if isinstance(streamer, list):
-            streamer = random.choice(streamer)
-
-        if streamer is twitch.Streamers.Unknown:
-            no_song_msg = ("I cannot determine the current streamer. Better "
-                           "luck next time.")
-            yield from self.client.privmsg(target, no_song_msg)
-        elif streamer is twitch.Streamers.Ian:
-            yield from self.handle_command_lastfm(
-                    target, nick, user="ihorner")
-        else:
-            no_song_msg = ("I don't know how to stalk {name} yet. Encourage "
-                           "them to use last.fm or a similar service.".format(
-                               name=streamer.name))
-            yield from self.client.privmsg(target, no_song_msg)
 
     @rate_limited
     @asyncio.coroutine
