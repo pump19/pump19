@@ -14,7 +14,9 @@ See the file LICENSE for copying permission.
 import aiohttp
 import asyncio
 import logging
+import os
 
+CLIENT_ID = os.environ["TWITCH_CLIENT_ID"]
 CHATTERS_URL = "http://tmi.twitch.tv/group/user/{stream}/chatters"
 BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
                  "{stream}/videos?limit={limit}&broadcasts=true")
@@ -22,6 +24,10 @@ HIGHLIGHT_URL = ("https://api.twitch.tv/kraken/channels/"
                  "{stream}/videos?limit={limit}&broadcasts=false")
 STREAM_URL = "https://api.twitch.tv/kraken/streams/loadingreadyrun"
 
+TWITCH_API_HEADERS = {
+    "Accept": "application/vnd.twitchtv.v3+json",
+    "Client-ID": CLIENT_ID
+}
 
 
 @asyncio.coroutine
@@ -37,7 +43,7 @@ def get_broadcasts(stream, limit):
 
     bc_url = BROADCAST_URL.format(stream=stream, limit=limit)
     bc_req = yield from aiohttp.request(
-        "get", bc_url, headers={"Accept": "application/vnd.twitchtv.v3+json"})
+        "get", bc_url, headers=TWITCH_API_HEADERS)
     broadcasts = yield from bc_req.json()
 
     logger.debug("Retrieved {nof} broadcasts for {stream}.".format(
@@ -60,7 +66,7 @@ def get_highlights(stream, limit):
 
     hl_url = HIGHLIGHT_URL.format(stream=stream, limit=limit)
     hl_req = yield from aiohttp.request(
-        "get", hl_url, headers={"Accept": "application/vnd.twitchtv.v3+json"})
+        "get", hl_url, headers=TWITCH_API_HEADERS)
     highlights = yield from hl_req.json()
 
     logger.debug("Retrieved {nof} highlights for {stream}.".format(
@@ -82,7 +88,7 @@ def get_moderators(stream):
 
     chatters_url = CHATTERS_URL.format(stream=stream)
     chatters_req = yield from aiohttp.request(
-        "get", chatters_url, headers={"Accept": "application/json"})
+        "get", chatters_url, headers=TWITCH_API_HEADERS)
     chatters_dict = yield from chatters_req.json()
     chatters = chatters_dict["chatters"]
 
