@@ -28,6 +28,8 @@ CMD_REGEX = {
     "latest":
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
+    "18gac":
+        re.compile("^18gac$"),
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrftb":
@@ -179,6 +181,20 @@ class CommandHandler:
 
             # let the feed parser announce it
             yield from self.feed.announce(feed, target=target)
+
+    @rate_limited
+    @asyncio.coroutine
+    def handle_command_18gac(self, target, nick):
+        """
+        Handle !18gac command.
+        Post the 17th, 18th, and 19th most watched games on Twitch.tv.
+        """
+        games = yield from twitch.get_top_games(1, 18)
+
+        game18 = next(games, None)
+        game18_msg = "{0} is the 18th most viewed game at {1} viewers.".format(
+            *game18)
+        yield from self.client.privmsg(target, game18_msg)
 
     @rate_limited
     @asyncio.coroutine

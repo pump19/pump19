@@ -23,6 +23,8 @@ BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
 HIGHLIGHT_URL = ("https://api.twitch.tv/kraken/channels/"
                  "{stream}/videos?limit={limit}&broadcasts=false")
 STREAM_URL = "https://api.twitch.tv/kraken/streams/loadingreadyrun"
+GAMES_TOP_URL = ("https://api.twitch.tv/kraken/games/top"
+                 "?limit={limit}&offset={offset}")
 
 TWITCH_API_HEADERS = {
     "Accept": "application/vnd.twitchtv.v3+json",
@@ -74,6 +76,30 @@ def get_highlights(stream, limit):
 
     return ((video["title"], video["url"], video["recorded_at"])
             for video in highlights["videos"])
+
+
+@asyncio.coroutine
+def get_top_games(limit, offset):
+    """
+    Request the games currently viewed the most.
+    Returns an iterable of games, each entry being a tuple of name and number
+    of viewers.
+    """
+    logger = logging.getLogger("twitch")
+    logger.info("Requesting {limit} game(s) starting from {offset}.".format(
+        limit=limit, offset=offset))
+
+    gt_url = GAMES_TOP_URL.format(limit=limit, offset=offset)
+    gt_req = yield from aiohttp.request(
+        "get", gt_url, headers=TWITCH_API_HEADERS)
+
+    games = yield from gt_req.json()
+
+    logger.debug("Retrieved top {nof} games starting from {offset}.".format(
+        nof=len(games["top"]), offset=offset))
+
+    return ((entry["game"]["name"], entry["viewers"])
+            for entry in games["top"])
 
 
 @asyncio.coroutine
