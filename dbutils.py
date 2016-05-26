@@ -37,7 +37,7 @@ get_pool._lock = asyncio.Lock()
 async def get_codefall_entries(user_name, limit=1, loop=None):
     """Get a list of unclaimed codefall entries added by a given user."""
     pool = await get_pool(loop)
-    async with pool.cursor() as cur:
+    with (await pool.cursor()) as cur:
         query = """SELECT cid, description, code_type
                    FROM codefall
                    WHERE user_name = %(user_name)s AND claimed = False
