@@ -41,18 +41,17 @@ class MumblePingProtocol:
         self.status = {"ping": ping, "current": u_cur, "max": u_max}
         self.done.set()
 
-    @asyncio.coroutine
-    def get_status(self):
-        yield from self.done.wait()
+    async def get_status(self):
+        await self.done.wait()
         return self.status
 
 
-@asyncio.coroutine
-def get_status(host, port, loop=asyncio.get_event_loop()):
-    (trans, proto) = yield from loop.create_datagram_endpoint(
+async def get_status(host, port, loop=None):
+    loop = loop or asyncio.get_event_loop()
+    (trans, proto) = await loop.create_datagram_endpoint(
             MumblePingProtocol, remote_addr=(host, port))
     logger.info("Established connection to %s:%d", host, port)
 
     with contextlib.closing(trans):
-        status = yield from proto.get_status()
+        status = await proto.get_status()
         return status

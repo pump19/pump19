@@ -27,17 +27,17 @@ def main():
     logger = logging.getLogger("pump19")
     logger.info("Pump19 started.")
 
-    loop = asyncio.get_event_loop()
     client_config = config.get_config("irc")
     client = protocol.Protocol(**client_config)
+    loop = client.loop
 
     feed_config = config.get_config("rss")
-    feed = lrrfeed.LRRFeedParser(client, **feed_config)
+    feed = lrrfeed.LRRFeedParser(client, loop=loop, **feed_config)
     feed.start()
 
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, feed, **cmdhdl_config)
+    command.CommandHandler(client, feed, loop=loop, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
@@ -46,8 +46,8 @@ def main():
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
     logger.info("Running protocol activity.")
-    task = client.run()
-    loop.run_until_complete(task)
+    client.start()
+    loop.run_forever()
 
     # before we stop the event loop, make sure all tasks are done
     pending = asyncio.Task.all_tasks(loop)

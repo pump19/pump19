@@ -12,7 +12,6 @@ See the file LICENSE for copying permission.
 """
 
 import aiohttp
-import asyncio
 import logging
 import os
 
@@ -32,8 +31,7 @@ TWITCH_API_HEADERS = {
 }
 
 
-@asyncio.coroutine
-def get_broadcasts(stream, limit):
+async def get_broadcasts(stream, limit, loop=None):
     """
     Request the latest n broadcasts for a given stream.
     Returns an iterable of broadcasts, each entry being a tuple of title, url
@@ -44,9 +42,9 @@ def get_broadcasts(stream, limit):
         stream=stream, limit=limit))
 
     bc_url = BROADCAST_URL.format(stream=stream, limit=limit)
-    bc_req = yield from aiohttp.request(
-        "get", bc_url, headers=TWITCH_API_HEADERS)
-    broadcasts = yield from bc_req.json()
+    bc_req = await aiohttp.request(
+        "get", bc_url, headers=TWITCH_API_HEADERS, loop=loop)
+    broadcasts = await bc_req.json()
 
     logger.debug("Retrieved {nof} broadcasts for {stream}.".format(
         nof=len(broadcasts["videos"]), stream=stream))
@@ -55,8 +53,7 @@ def get_broadcasts(stream, limit):
             for video in broadcasts["videos"])
 
 
-@asyncio.coroutine
-def get_highlights(stream, limit):
+async def get_highlights(stream, limit, loop=None):
     """
     Request the latest n highlights for a given stream.
     Returns an iterable of highlights, each entry being a tuple of title, url
@@ -67,9 +64,9 @@ def get_highlights(stream, limit):
         stream=stream, limit=limit))
 
     hl_url = HIGHLIGHT_URL.format(stream=stream, limit=limit)
-    hl_req = yield from aiohttp.request(
-        "get", hl_url, headers=TWITCH_API_HEADERS)
-    highlights = yield from hl_req.json()
+    hl_req = await aiohttp.request(
+        "get", hl_url, headers=TWITCH_API_HEADERS, loop=loop)
+    highlights = await hl_req.json()
 
     logger.debug("Retrieved {nof} highlights for {stream}.".format(
         nof=len(highlights["videos"]), stream=stream))
@@ -78,32 +75,30 @@ def get_highlights(stream, limit):
             for video in highlights["videos"])
 
 
-@asyncio.coroutine
-def get_top_games(limit, offset):
+async def get_top_games(limit, offset, loop=None):
     """
     Request the games currently viewed the most.
     Returns an iterable of games, each entry being a tuple of name and number
     of viewers.
     """
     logger = logging.getLogger("twitch")
-    logger.info("Requesting {limit} game(s) starting from {offset}.".format(
+    logger.info("Requesting {limit} game(s) starting from #{offset}.".format(
         limit=limit, offset=offset))
 
     gt_url = GAMES_TOP_URL.format(limit=limit, offset=offset)
-    gt_req = yield from aiohttp.request(
-        "get", gt_url, headers=TWITCH_API_HEADERS)
+    gt_req = await aiohttp.request(
+        "get", gt_url, headers=TWITCH_API_HEADERS, loop=loop)
 
-    games = yield from gt_req.json()
+    games = await gt_req.json()
 
-    logger.debug("Retrieved top {nof} games starting from {offset}.".format(
+    logger.debug("Retrieved top {nof} games starting from #{offset}.".format(
         nof=len(games["top"]), offset=offset))
 
     return ((entry["game"]["name"], entry["viewers"])
             for entry in games["top"])
 
 
-@asyncio.coroutine
-def get_moderators(stream):
+async def get_moderators(stream, loop=None):
     """
     Request a list of moderators currently online in a given Twitch chat.
     For convenience, the list will contain staff members, admins and global
@@ -113,9 +108,9 @@ def get_moderators(stream):
     logger.info("Requesting chatters for {stream}.".format(stream=stream))
 
     chatters_url = CHATTERS_URL.format(stream=stream)
-    chatters_req = yield from aiohttp.request(
-        "get", chatters_url, headers=TWITCH_API_HEADERS)
-    chatters_dict = yield from chatters_req.json()
+    chatters_req = await aiohttp.request(
+        "get", chatters_url, headers=TWITCH_API_HEADERS, loop=loop)
+    chatters_dict = await chatters_req.json()
     chatters = chatters_dict["chatters"]
 
     moderators = chatters["moderators"]
@@ -129,8 +124,7 @@ def get_moderators(stream):
     return moderators
 
 
-@asyncio.coroutine
-def is_moderator(stream, user):
+async def is_moderator(stream, user, loop=None):
     """Check whether a user is a moderator on a given channel."""
     # add a cache if we don't already have one
     if not hasattr(is_moderator, "cache"):
@@ -141,7 +135,7 @@ def is_moderator(stream, user):
         return True
     else:
         # we don't know those, query twitch
-        mods = yield from get_moderators(stream)
+        mods = await get_moderators(stream, loop=loop)
         if user in mods:
             is_moderator.cache.append(key)
             return True

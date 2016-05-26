@@ -11,7 +11,6 @@ See the file LICENSE for copying permission.
 """
 
 import aiomc
-import aiomumble
 import asyncio
 import dbutils
 import functools
@@ -34,8 +33,6 @@ CMD_REGEX = {
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrftb":
         re.compile("^lrrftb$"),
-    "mumble":
-        re.compile("^mumble$"),
     "lastfm":
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "help":
@@ -68,12 +65,11 @@ class CommandHandler:
         def __call__(self, func):
 
             @functools.wraps(func)
-            @asyncio.coroutine
-            def wrapper(*args, **kwargs):
+            async def wrapper(*args, **kwargs):
                 now = self.loop.time()
                 if (now - wrapper._spam_last) > wrapper._spam_span:
                     wrapper._spam_last = now
-                    yield from func(*args, **kwargs)
+                    await func(*args, **kwargs)
                 else:
                     self.logger.warning("Suppressed call to {name}.".format(
                         name=func.__name__))
@@ -108,7 +104,7 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, *, prefix="&", override=None):
+    def __init__(self, client, feed, *, loop=None, prefix="&", override=None):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
@@ -117,6 +113,8 @@ class CommandHandler:
         self.client = client
         self.feed = feed
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
+        self.loop = loop or asyncio.get_event_loop()
+        self.rate_limited.loop = loop
 
         self.setup_routing()
 
@@ -128,8 +126,7 @@ class CommandHandler:
             if handle_command and callable(handle_command):
                 self.router.add_route(regex, handle_command)
 
-    @asyncio.coroutine
-    def handle_privmsg(self, nick, target, message):
+    async def handle_privmsg(self, nick, target, message, **kwargs):
         """
         Handle a PRIVMSG event and dispatch any command to the relevant method.
         """
@@ -149,11 +146,10 @@ class CommandHandler:
         # check if we can handle that command
         handle_command = self.router.get_route(cmd)
         if handle_command and callable(handle_command):
-            yield from handle_command(target, nick)
+            await handle_command(target, nick)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_latest(self, target, nick, *, feed=None):
+    async def handle_command_latest(self, target, nick, *, feed=None):
         """
         Handle !latest [video|podcast|broadcast|highlight] command.
         Post the most recent RSS feed item or Twitch.tv broadcast.
@@ -162,74 +158,73 @@ class CommandHandler:
 
         # broadcasts are updated here
         if feed == "broadcast":
-            broadcast = yield from twitch.get_broadcasts("loadingreadyrun", 1)
+            broadcast = await twitch.get_broadcasts(
+                    "loadingreadyrun", 1, loop=self.loop)
             video = next(broadcast, None)
 
             broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*video)
 
-            yield from self.client.privmsg(target, broadcast_msg)
+            await self.client.privmsg(target, broadcast_msg)
         elif feed == "highlight":
-            highlight = yield from twitch.get_highlights("loadingreadyrun", 1)
+            highlight = await twitch.get_highlights("loadingreadyrun", 1)
             video = next(highlight, None)
 
             highlight_msg = "Latest Highlight: {0} ({1}) [{2}]".format(*video)
 
-            yield from self.client.privmsg(target, highlight_msg)
+            await self.client.privmsg(target, highlight_msg)
         else:
             # start a manual update
-            yield from self.feed.update(feed)
+            await self.feed.update(feed)
 
             # let the feed parser announce it
-            yield from self.feed.announce(feed, target=target)
+            await self.feed.announce(feed, target=target)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_18gac(self, target, nick):
+    async def handle_command_18gac(self, target, nick):
         """
         Handle !18gac command.
         Post the 17th, 18th, and 19th most watched games on Twitch.tv.
         """
-        games = yield from twitch.get_top_games(1, 18)
+        games = await twitch.get_top_games(1, 18, loop=self.loop)
 
         game18 = next(games, None)
         game18_msg = "{0} is the 18th most viewed game at {1} viewers.".format(
             *game18)
-        yield from self.client.privmsg(target, game18_msg)
+        await self.client.privmsg(target, game18_msg)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_codefall(self, target, nick, *, limit=None):
+    async def handle_command_codefall(self, target, nick, *, limit=None):
         """
         Handle !codefall [limit] command.
         If available, post a single unclaimed codefall URL.
         """
         limit = min(int(limit), 3) if limit else 1
 
-        entries = yield from dbutils.get_codefall_entries(nick, limit)
+        entries = await dbutils.get_codefall_entries(
+                nick, limit, loop=self.loop)
 
         if not entries:
             no_codefall_msg = ("Could not find any unclaimed codes. "
                                "You can add new entries at {url}.".format(
                                    url=CODEFALL_URL))
-            yield from self.client.privmsg(target, no_codefall_msg)
+            await self.client.privmsg(target, no_codefall_msg)
             return
 
         entry_msgs = ("{1} ({2}) {0}".format(*entry) for entry in entries)
         codefall_msg = "Codefall | {0}".format(" | ".join(entry_msgs))
 
-        yield from self.client.privmsg(target, codefall_msg)
+        await self.client.privmsg(target, codefall_msg)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_lrrftb(self, target, nick):
+    async def handle_command_lrrftb(self, target, nick):
         """
         Handle !lrrftb command.
         Query and post the status of the modded Minecraft server.
         """
         # don't stall forever when querying status
-        status_coro = aiomc.get_status("107.172.159.23", 25565)
+        status_coro = aiomc.get_status("107.172.159.23", 25565, loop=self.loop)
         try:
-            status = yield from asyncio.wait_for(status_coro, 2.0)
+            status = await asyncio.wait_for(status_coro, 2.0)
         except asyncio.TimeoutError:
             status = None
 
@@ -239,7 +234,7 @@ class CommandHandler:
 
         if not status:
             no_lrrmc_msg = base_msg.format(status="Unknown")
-            yield from self.client.privmsg(target, no_lrrmc_msg)
+            await self.client.privmsg(target, no_lrrmc_msg)
             return
 
         try:
@@ -251,52 +246,22 @@ class CommandHandler:
         status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
 
         lrrmc_msg = base_msg.format(status=status_msg)
-        yield from self.client.privmsg(target, lrrmc_msg)
+        await self.client.privmsg(target, lrrmc_msg)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_mumble(self, target, nick):
-        """
-        Handle !mumble command.
-        Query and post the status of the LRR Mumble server.
-        """
-        # don't stall forever when querying status
-        status_coro = aiomumble.get_status("lrr.dahou.se", 64738)
-        try:
-            status = yield from asyncio.wait_for(status_coro, 2.0)
-        except asyncio.TimeoutError:
-            status = None
-
-        base_msg = ("Join the LRR Mumble Server on lrr.dahou.se:64738! "
-                    "Current Status: {status}")
-
-        if not status:
-            no_mumble_msg = base_msg.format(status="Unknown")
-            yield from self.client.privmsg(target, no_mumble_msg)
-            return
-
-        nowu = status.get("current", 0)
-        maxu = status.get("max", 0)
-        status_msg = "Online - {now}/{max} users".format(now=nowu, max=maxu)
-
-        mumble_msg = base_msg.format(status=status_msg)
-        yield from self.client.privmsg(target, mumble_msg)
-
-    @rate_limited
-    @asyncio.coroutine
-    def handle_command_lastfm(self, target, nick, *, user=None):
+    async def handle_command_lastfm(self, target, nick, *, user=None):
         """
         Handle !last.fm command.
         Query information on the provided last.fm user handle and print the
         most recently listened track.
         """
-        coro = songs.get_lastfm_info(user)
+        coro = songs.get_lastfm_info(user, loop=self.loop)
 
-        info = yield from coro
+        info = await coro
         if not info:
             no_lastfm_msg = ("Cannot query last.fm user information for "
                              "{user}.".format(user=user))
-            yield from self.client.privmsg(target, no_lastfm_msg)
+            await self.client.privmsg(target, no_lastfm_msg)
             return
 
         name = info.get("name")
@@ -307,18 +272,17 @@ class CommandHandler:
         if not track and not artist:
             no_lastfm_msg = ("Cannot query most recently played track for "
                              "{name}.".format(name=name))
-            yield from self.client.privmsg(target, no_lastfm_msg)
+            await self.client.privmsg(target, no_lastfm_msg)
             return
 
         tempus = "is listening" if live else "last listened"
 
         lastfm_msg = "{name} {tempus} to \"{track}\" by {artist}".format(
                 name=name, tempus=tempus, track=track, artist=artist)
-        yield from self.client.privmsg(target, lastfm_msg)
+        await self.client.privmsg(target, lastfm_msg)
 
     @rate_limited
-    @asyncio.coroutine
-    def handle_command_help(self, target, nick):
+    async def handle_command_help(self, target, nick):
         """
         Handle !help command.
         Posts a link to the golem's list of supported commands.
@@ -326,4 +290,4 @@ class CommandHandler:
         help_msg = ("Pump19 is run by Twisted Pear. "
                     "Check {url} for a list of supported commands.").format(
                         url=COMMAND_URL)
-        yield from self.client.privmsg(target, help_msg)
+        await self.client.privmsg(target, help_msg)

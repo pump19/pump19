@@ -67,8 +67,7 @@ class LRRFeedParser:
 
         self.logger.info("Waiting for automatic update to finish.")
 
-    @asyncio.coroutine
-    def auto_update(self, feed):
+    async def auto_update(self, feed):
         self.logger.info("Starting automatic update for RSS feed "
                          "{0}.".format(feed))
         try:
@@ -79,15 +78,14 @@ class LRRFeedParser:
                 if nxt > now:
                     # make sure we sleep slightly longer than necessary
                     naptime = 0.1 + (nxt - now)
-                    yield from asyncio.sleep(naptime)
+                    await asyncio.sleep(naptime)
                 else:
-                    yield from self.update(feed)
+                    await self.update(feed)
         except asyncio.CancelledError:
             self.logger.info("Automatic update for RSS feed {0} was "
                              "cancelled.".format(feed))
 
-    @asyncio.coroutine
-    def update(self, feed, *, announce=True):
+    async def update(self, feed, *, announce=True):
         """
         Do the actual update for a given feed.
         If announce is set to True (default) a change of the "url" key will
@@ -98,11 +96,11 @@ class LRRFeedParser:
                                 "{0}.".format(feed))
             return
 
-        with (yield from self.updater[feed]["lock"]):
+        async with self.updater[feed]["lock"]:
             self.logger.debug("Running update for RSS feed {0}.".format(feed))
 
             feed_url = RSS_FEEDS[feed]["url"]
-            new_entry = yield from self.get_latest(feed_url)
+            new_entry = await self.get_latest(feed_url)
 
             # reset the timer
             self.updater[feed]["last"] = self.loop.time()
@@ -123,10 +121,9 @@ class LRRFeedParser:
                 self.logger.info("Detected new entry for RSS feed "
                                  "{0}.".format(feed))
                 if announce:
-                    yield from self.announce(feed)
+                    await self.announce(feed)
 
-    @asyncio.coroutine
-    def announce(self, feed, *, target=None):
+    async def announce(self, feed, *, target=None):
         if feed not in self.updater or feed not in RSS_FEEDS:
             self.logger.warning("Cannot announce unknown RSS feed "
                                 "{0}.".format(feed))
@@ -141,20 +138,19 @@ class LRRFeedParser:
             entry["title"], entry["url"], entry["time"].isoformat())
 
         if target:
-            yield from self.client.privmsg(target, entry_msg)
+            await self.client.privmsg(target, entry_msg)
         else:
-            yield from self.client.announce(entry_msg)
+            await self.client.announce(entry_msg)
 
     @staticmethod
-    @asyncio.coroutine
-    def get_latest(feed_url):
+    async def get_latest(feed_url):
         logger = logging.getLogger("lrrfeed")
         logger.debug("Retrieving latest entry for {0}.".format(feed_url))
 
         try:
-            feed_req = yield from aiohttp.request(
+            feed_req = await aiohttp.request(
                 "get", feed_url, headers={"Accept": "application/rss+xml"})
-            feed_body = yield from feed_req.text()
+            feed_body = await feed_req.text()
         except aiohttp.errors.ClientError:
             logger.exception("Exception raised when updating RSS feed for "
                              "{0}.".format(feed_url))

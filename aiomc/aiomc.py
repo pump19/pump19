@@ -20,10 +20,9 @@ logger = logging.getLogger("aiomc")
 logger.addHandler(logging.NullHandler())
 
 
-@asyncio.coroutine
-def get_status(host, port):
+async def get_status(host, port, loop=None):
     try:
-        (rd, wr) = yield from asyncio.open_connection(host, port)
+        (rd, wr) = await asyncio.open_connection(host, port, loop=loop)
     except OSError:
         logger.error("Error connecting to %s:%d", host, port)
         return None
@@ -32,21 +31,21 @@ def get_status(host, port):
 
     packet = protocol.handshake(host, port)
     wr.write(packet)
-    yield from wr.drain()
+    await wr.drain()
 
     packet = protocol.status_request()
     wr.write(packet)
-    yield from wr.drain()
-    length = yield from protocol.unpack_varint(rd)
+    await wr.drain()
+    length = await protocol.unpack_varint(rd)
     logger.debug("Answer to status request is %d bytes long.", length)
 
     # make sure to close the socket when we're done
     with contextlib.closing(wr):
-        status = yield from protocol.unpack_varint(rd)
+        status = await protocol.unpack_varint(rd)
         if status:
             logger.error("Got error code %d for status request.", status)
             return None
 
-        raw = yield from protocol.unpack_string(rd)
+        raw = await protocol.unpack_string(rd)
         data = json.loads(raw)
         return data

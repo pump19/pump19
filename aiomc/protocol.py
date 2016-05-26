@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # vim:fileencoding=utf-8:ts=8:et:sw=4:sts=4:tw=79
 
-from asyncio import coroutine
 from struct import pack
 
 """
@@ -26,11 +25,10 @@ def pack_varint(value):
     return bytes(packet)
 
 
-@coroutine
-def unpack_varint(stream):
+async def unpack_varint(stream):
     result = 0
     for i in range(5):
-        part = yield from stream.read(1)
+        part = await stream.read(1)
         part = ord(part)
         result |= (part & 0x7F) << (7 * i)
         if not part & 0x80:
@@ -46,10 +44,9 @@ def pack_string(value):
     return bytes(packet)
 
 
-@coroutine
-def unpack_string(stream):
-    length = yield from unpack_varint(stream)
-    raw = yield from stream.readexactly(length)
+async def unpack_string(stream):
+    length = await unpack_varint(stream)
+    raw = await stream.readexactly(length)
     return raw.decode()
 
 

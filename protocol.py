@@ -49,38 +49,39 @@ class Protocol:
         self.event_handler("CLIENT_DISCONNECT")(self.reconnect)
         self.event_handler("RPL_WELCOME")(self.join)
 
+    @property
+    def loop(self):
+        """Expose the bottom Client's event loop."""
+        return self.irc.loop
+
     def event_handler(self, command):
         """Register an event handler."""
         return self.irc.on(command)
 
-    @asyncio.coroutine
-    def privmsg(self, target, message):
+    async def privmsg(self, target, message):
         """
         Send a message to target (nick or channel).
         This method is rate limited to one line per second.
         """
-        with (yield from self.msglock):
+        async with self.msglock:
             self.irc.send("PRIVMSG", target=target, message=message)
-            yield from asyncio.sleep(1)
+            await asyncio.sleep(1)
 
-    @asyncio.coroutine
-    def announce(self, message):
+    async def announce(self, message):
         """
         Send a message to all registered channels.
         This method is rate limited to one line per second.
         """
-        with (yield from self.msglock):
+        async with self.msglock:
             for channel in self.channels:
                 self.irc.send("PRIVMSG", target=channel, message=message)
-                yield from asyncio.sleep(1)
+                await asyncio.sleep(1)
 
-    @asyncio.coroutine
-    def keepalive(self, message):
+    async def keepalive(self, message):
         """Handle PING messages."""
         self.irc.send("PONG", message=message)
 
-    @asyncio.coroutine
-    def register(self):
+    async def register(self):
         """Register with configured nick, user and real name."""
         self.logger.info("Connection established.")
         self.logger.info("Registering with nick {0}.".format(self.nickname))
@@ -89,27 +90,25 @@ class Protocol:
         self.irc.send("NICK", nick=self.nickname)
         self.irc.send("USER", user=self.username, realname=self.realname)
 
-    @asyncio.coroutine
-    def join(self):
+    async def join(self, **kwargs):
         """Join configured channels after registering with the network."""
         self.logger.info("Joining channels {0}.".format(
             ",".join(self.channels)))
         for channel in self.channels:
             self.irc.send("JOIN", channel=channel)
 
-    @asyncio.coroutine
-    def reconnect(self):
+    async def reconnect(self):
         """Reconnect after losing the connection to the network."""
         if self.restart:
             self.logger.warning("Connection to server lost. Reconnecting...")
-            yield from self.irc.connect()
+            await self.irc.connect()
         else:
             self.logger.info("Connection to server closed.")
+            self.loop.stop()
 
-    @asyncio.coroutine
-    def run(self):
+    def start(self):
         """Run the protocol instance."""
-        yield from self.irc.run()
+        self.loop.create_task(self.irc.connect())
 
     def shutdown(self):
         """Shut down the protocol instance."""
