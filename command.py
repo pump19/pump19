@@ -183,13 +183,16 @@ class CommandHandler:
     async def handle_command_18gac(self, target, nick):
         """
         Handle !18gac command.
-        Post the 17th, 18th, and 19th most watched games on Twitch.tv.
+        Post the 18th, 19th, and 20th most watched games on Twitch.tv.
         """
-        games = await twitch.get_top_games(1, 18, loop=self.loop)
+        games = await twitch.get_top_games(3, 18, loop=self.loop)
+        game_msgs = ('"{0}" ({1})'.format(*game) for game in games)
 
-        game18 = next(games, None)
-        game18_msg = "{0} is the 18th most viewed game at {1} viewers.".format(
-            *game18)
+        game18 = next(game_msgs, None)
+        game18_msg = ("{0} is the 18th most watched game, "
+                      "followed by {1}.").format(
+                              game18, " and ".join(game_msgs))
+
         await self.client.privmsg(target, game18_msg)
 
     @rate_limited
