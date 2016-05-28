@@ -185,7 +185,7 @@ class CommandHandler:
         Handle !18gac command.
         Post the 18th, 19th, and 20th most watched games on Twitch.tv.
         """
-        games = await twitch.get_top_games(3, 18, loop=self.loop)
+        games = await twitch.get_top_games(3, 17, loop=self.loop)
         game_msgs = ('"{0}" ({1})'.format(*game) for game in games)
 
         game18 = next(game_msgs, None)
