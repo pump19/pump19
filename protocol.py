@@ -77,6 +77,17 @@ class Protocol:
                 self.irc.send("PRIVMSG", target=channel, message=message)
                 await asyncio.sleep(1)
 
+    async def describe(self, target, message):
+        """
+        Send an ACTION message to target (nick or channel).
+        This method is rate limited to one line per second.
+        """
+        message = "\x01ACTION {message}\x01".format(message=message)
+
+        async with self.msglock:
+            self.irc.send("PRIVMSG", target=target, message=message)
+            await asyncio.sleep(1)
+
     async def keepalive(self, message):
         """Handle PING messages."""
         self.irc.send("PONG", message=message)
