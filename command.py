@@ -58,7 +58,7 @@ class CommandHandler:
         logger = logging.getLogger("command.limiter")
 
         def __init__(self, *, span=15, loop=None):
-            """Initialize rate limiter with a default delay of 30."""
+            """Initialize rate limiter with a default delay of 15."""
             self.span = span
             self.loop = loop or asyncio.get_event_loop()
 
