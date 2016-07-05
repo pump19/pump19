@@ -12,6 +12,7 @@ See the file LICENSE for copying permission.
 
 import asyncio
 import bottom
+import functools
 import logging
 
 # bottom is too talkative, disable its logger
@@ -48,6 +49,9 @@ class Protocol:
         self.event_handler("CLIENT_CONNECT")(self.register)
         self.event_handler("CLIENT_DISCONNECT")(self.reconnect)
         self.event_handler("RPL_WELCOME")(self.join)
+
+        self.fake_ping = functools.partial(
+                self.irc.trigger, "PING", message="keepalive")
 
     @property
     def loop(self):
@@ -90,7 +94,13 @@ class Protocol:
 
     async def keepalive(self, message):
         """Handle PING messages."""
+        self.logger.debug("Handling PING :{0}".format(message))
+
         self.irc.send("PONG", message=message)
+
+        # reset keepalive
+        self.pinger.cancel()
+        self.pinger = self.loop.call_later(300, self.fake_ping)
 
     async def register(self):
         """Register with configured nick, user and real name."""
@@ -120,6 +130,7 @@ class Protocol:
     def start(self):
         """Run the protocol instance."""
         self.loop.create_task(self.irc.connect())
+        self.pinger = self.loop.call_later(300, self.fake_ping)
 
     def shutdown(self):
         """Shut down the protocol instance."""
