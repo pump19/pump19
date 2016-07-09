@@ -21,6 +21,7 @@ import re
 import songs
 import twitch
 
+BINGO_URL = "https://pump19.eu/bingo"
 CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
 
@@ -38,6 +39,8 @@ CMD_REGEX = {
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "roll":
         re.compile("^roll(?: (?P<count>\d+)?d(?P<sides>\d+))?"),
+    "bingo":
+        re.compile("^bingo$"),
     "help":
         re.compile("^help$")
 }
@@ -333,6 +336,17 @@ class CommandHandler:
                 " => {0}".format(total) if count > 1 else "")
 
         await self.client.privmsg(target, roll_msg)
+
+    @rate_limited
+    async def handle_command_bingo(self, target, nick):
+        """
+        Handle !bingo command.
+        Posts a link to the Trope Bingo cards.
+        """
+        bingo_msg = ("Check out {url} "
+                     "for our interactive Trope Bingo cards.").format(
+                         url=BINGO_URL)
+        await self.client.privmsg(target, bingo_msg)
 
     @rate_limited
     async def handle_command_help(self, target, nick):
