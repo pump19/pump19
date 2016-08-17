@@ -214,7 +214,7 @@ class CommandHandler:
 
         if not entries:
             no_codefall_msg = ("Could not find any unclaimed codes. "
-                               "You can add new entries at {url}.".format(
+                               "You can add new entries at {url}".format(
                                    url=CODEFALL_URL))
             await self.client.privmsg(target, no_codefall_msg)
             return
