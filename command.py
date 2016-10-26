@@ -24,6 +24,8 @@ import twitch
 BINGO_URL = "https://pump19.eu/bingo"
 CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
+LRRMC_HOST = "minecraft.darkmorford.net"
+LRRMC_PORT = 25565
 
 CMD_REGEX = {
     "latest":
@@ -33,8 +35,8 @@ CMD_REGEX = {
         re.compile("^18gac$"),
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
-    "lrrftb":
-        re.compile("^lrrftb$"),
+    "lrrmc":
+        re.compile("^lrrmc$"),
     "lastfm":
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "roll":
@@ -225,24 +227,25 @@ class CommandHandler:
         await self.client.privmsg(target, codefall_msg)
 
     @rate_limited
-    async def handle_command_lrrftb(self, target, nick):
+    async def handle_command_lrrmc(self, target, nick):
         """
-        Handle !lrrftb command.
-        Query and post the status of the modded Minecraft server.
+        Handle !lrrmc command.
+        Query and post the status of the LRR Minecraft server.
         """
         # don't stall forever when querying status
-        status_coro = aiomc.get_status("107.172.159.23", 25565, loop=self.loop)
+        status_coro = aiomc.get_status(LRRMC_HOST, LRRMC_PORT, loop=self.loop)
+
         try:
             status = await asyncio.wait_for(status_coro, 2.0)
         except asyncio.TimeoutError:
             status = None
 
-        base_msg = ("Join the modded Minecraft Server on ftb.lrrcraft.com! "
-                    "We're playing Feed The Beej Infinity Evolved v2.3.5. "
+        base_msg = ("Join the LRR Minecraft Server on {url}! "
+                    "Check http://{url}:8123 for the dynamic map. "
                     "Current Status: {status}")
 
         if not status:
-            no_lrrmc_msg = base_msg.format(status="Unknown")
+            no_lrrmc_msg = base_msg.format(url=LRRMC_HOST, status="Unknown")
             await self.client.privmsg(target, no_lrrmc_msg)
             return
 
@@ -254,7 +257,7 @@ class CommandHandler:
 
         status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
 
-        lrrmc_msg = base_msg.format(status=status_msg)
+        lrrmc_msg = base_msg.format(url=LRRMC_HOST, status=status_msg)
         await self.client.privmsg(target, lrrmc_msg)
 
     @rate_limited
