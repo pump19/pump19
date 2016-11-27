@@ -24,8 +24,21 @@ import twitch
 BINGO_URL = "https://pump19.eu/bingo"
 CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
-LRRMC_HOST = "minecraft.darkmorford.net"
-LRRMC_PORT = 25565
+LRRMC_SERVERS = {
+    "vanilla": {
+        "name": "LRR Vanilla Minecraft Server",
+        "host": "minecraft.darkmorford.net",
+        "port": 25565,
+        "info": "Check http://minecraft.darkmorford.net:8123/ "
+                "for the dynamic map."
+    },
+    "ftb": {
+        "name": "LRR FTB Minecraft Server",
+        "host": "ftb.lrrcraft.com",
+        "port": 25565,
+        "info": "We're playing Feed The Beej Presents Direwolf20 1.10."
+    }
+}
 
 CMD_REGEX = {
     "latest":
@@ -36,7 +49,7 @@ CMD_REGEX = {
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrmc":
-        re.compile("^lrrmc$"),
+        re.compile("^lrrmc(?: (?P<server>\w+))?$"),
     "lastfm":
         re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
     "roll":
@@ -227,25 +240,27 @@ class CommandHandler:
         await self.client.privmsg(target, codefall_msg)
 
     @rate_limited
-    async def handle_command_lrrmc(self, target, nick):
+    async def handle_command_lrrmc(self, target, nick, server="vanilla"):
         """
         Handle !lrrmc command.
         Query and post the status of the LRR Minecraft server.
         """
+        server = LRRMC_SERVERS.get(server, LRRMC_SERVERS["vanilla"])
         # don't stall forever when querying status
-        status_coro = aiomc.get_status(LRRMC_HOST, LRRMC_PORT, loop=self.loop)
+        status_coro = aiomc.get_status(
+            server["host"], server["port"],
+            loop=self.loop)
 
         try:
             status = await asyncio.wait_for(status_coro, 2.0)
         except asyncio.TimeoutError:
             status = None
 
-        base_msg = ("Join the LRR Minecraft Server on {url}! "
-                    "Check http://{url}:8123 for the dynamic map. "
+        base_msg = ("Join the {name} on {host}:{port}! {info} "
                     "Current Status: {status}")
 
         if not status:
-            no_lrrmc_msg = base_msg.format(url=LRRMC_HOST, status="Unknown")
+            no_lrrmc_msg = base_msg.format(**server, status="Unknown")
             await self.client.privmsg(target, no_lrrmc_msg)
             return
 
@@ -257,7 +272,7 @@ class CommandHandler:
 
         status_msg = "Online - {now}/{max} players".format(now=nowp, max=maxp)
 
-        lrrmc_msg = base_msg.format(url=LRRMC_HOST, status=status_msg)
+        lrrmc_msg = base_msg.format(**server, status=status_msg)
         await self.client.privmsg(target, lrrmc_msg)
 
     @rate_limited
