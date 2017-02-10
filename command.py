@@ -45,7 +45,7 @@ CMD_REGEX = {
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "18gac":
-        re.compile("^18gac$"),
+        re.compile("^18gac(?: (?P<count>\d))?$"),
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrmc":
@@ -201,18 +201,19 @@ class CommandHandler:
             await self.feed.announce(feed, target=target)
 
     @rate_limited
-    async def handle_command_18gac(self, target, nick):
+    async def handle_command_18gac(self, target, nick, *, count=None):
         """
         Handle !18gac command.
-        Post the 18th, 19th, and 20th most watched games on Twitch.tv.
+        Post the 18th +n most watched games on Twitch.tv.
         """
-        games = await twitch.get_top_games(3, 17, loop=self.loop)
+        count = max(int(count), 3) if count else 3
+        games = await twitch.get_top_games(count, 17, loop=self.loop)
         game_msgs = ('"{0}" ({1})'.format(*game) for game in games)
 
         game18 = next(game_msgs, None)
         game18_msg = ("{0} is the 18th most watched game, "
                       "followed by {1}.").format(
-                              game18, " and ".join(game_msgs))
+                              game18, ", ".join(game_msgs))
 
         await self.client.privmsg(target, game18_msg)
 
