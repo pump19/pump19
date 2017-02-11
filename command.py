@@ -206,8 +206,8 @@ class CommandHandler:
         Handle !18gac command.
         Post the 18th +n most watched games on Twitch.tv.
         """
-        count = max(int(count), 3) if count else 3
-        games = await twitch.get_top_games(count, 17, loop=self.loop)
+        count = max(int(count), 1) if count else 2
+        games = await twitch.get_top_games(count + 1, 17, loop=self.loop)
         game_msgs = ('"{0}" ({1})'.format(*game) for game in games)
 
         game18 = next(game_msgs, None)
