@@ -129,7 +129,7 @@ class CommandHandler:
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
-        self.prefix = prefix
+        self.prefix = tuple(prefix)
         self.override = override
         self.client = client
         self.feed = feed
