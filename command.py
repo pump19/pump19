@@ -47,7 +47,7 @@ CMD_REGEX = {
     "18gac":
         re.compile("^18gac|🎮(?: (?P<count>\d))?$"),
     "codefall":
-        re.compile("^codefall(?: (?P<limit>\d))?$"),
+        re.compile("^codefall|🎁(?: (?P<limit>\d))?$"),
     "lrrmc":
         re.compile("^lrrmc(?: (?P<server>\w+))?$"),
     "lastfm":
