@@ -45,19 +45,19 @@ CMD_REGEX = {
         re.compile("^latest"
                    "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
     "18gac":
-        re.compile("^18gac(?: (?P<count>\d))?$"),
+        re.compile("^18gac|🎮(?: (?P<count>\d))?$"),
     "codefall":
         re.compile("^codefall(?: (?P<limit>\d))?$"),
     "lrrmc":
         re.compile("^lrrmc(?: (?P<server>\w+))?$"),
     "lastfm":
-        re.compile("^last\.fm (?P<user>\w+)$", re.ASCII),
+        re.compile("^last\.fm|🎵 (?P<user>\w+)$", re.ASCII),
     "roll":
-        re.compile("^roll(?: (?P<count>\d+)?d(?P<sides>\d+))?"),
+        re.compile("^roll|🎲(?: (?P<count>\d+)?d(?P<sides>\d+))?"),
     "bingo":
         re.compile("^bingo$"),
     "help":
-        re.compile("^help$")
+        re.compile("^help|🚑$")
 }
 
 # set up locale for currency formatting (patreon command wants that)
