@@ -15,7 +15,6 @@ import asyncio
 import command
 import config
 import logging
-import lrrfeed
 import protocol
 import signal
 
@@ -31,17 +30,12 @@ def main():
     client = protocol.Protocol(**client_config)
     loop = client.loop
 
-    feed_config = config.get_config("rss")
-    feed = lrrfeed.LRRFeedParser(client, loop=loop, **feed_config)
-    feed.start()
-
     cmdhdl_config = config.get_config("cmd")
     # we don't need to remember this instance
-    command.CommandHandler(client, feed, loop=loop, **cmdhdl_config)
+    command.CommandHandler(client, loop=loop, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
-        feed.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
@@ -57,6 +51,7 @@ def main():
     loop.close()
     logger.info("Protocol activity ceased.")
     logger.info("Exiting...")
+
 
 if __name__ == "__main__":
     main()

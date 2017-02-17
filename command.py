@@ -43,7 +43,7 @@ LRRMC_SERVERS = {
 CMD_REGEX = {
     "latest":
         re.compile("^latest"
-                   "(?: (?P<feed>video|podcast|broadcast|highlight))?$"),
+                   "(?: (?P<feed>broadcast|highlight))?$"),
     "18gac":
         re.compile("^18gac|🎮(?: (?P<count>\d))?$"),
     "codefall":
@@ -125,14 +125,13 @@ class CommandHandler:
 
     router = CommandRouter()
 
-    def __init__(self, client, feed, *, loop=None, prefix="&", override=None):
+    def __init__(self, client, *, loop=None, prefix="&", override=None):
         """Initialize the command handler and register for PRIVMSG events."""
         self.logger.info("Creating CommandHandler instance.")
 
         self.prefix = tuple(prefix)
         self.override = override
         self.client = client
-        self.feed = feed
         self.client.event_handler("PRIVMSG")(self.handle_privmsg)
         self.loop = loop or asyncio.get_event_loop()
         self.rate_limited.loop = loop
@@ -172,10 +171,10 @@ class CommandHandler:
     @rate_limited
     async def handle_command_latest(self, target, nick, *, feed=None):
         """
-        Handle !latest [video|podcast|broadcast|highlight] command.
-        Post the most recent RSS feed item or Twitch.tv broadcast.
+        Handle !latest [broadcast|highlight] command.
+        Post the most recent Twitch.tv broadcast or hightlight.
         """
-        feed = feed or "video"
+        feed = feed or "broadcast"
 
         # broadcasts are updated here
         if feed == "broadcast":
@@ -193,12 +192,6 @@ class CommandHandler:
             highlight_msg = "Latest Highlight: {0} ({1}) [{2}]".format(*video)
 
             await self.client.privmsg(target, highlight_msg)
-        else:
-            # start a manual update
-            await self.feed.update(feed)
-
-            # let the feed parser announce it
-            await self.feed.announce(feed, target=target)
 
     @rate_limited
     async def handle_command_18gac(self, target, nick, *, count=None):

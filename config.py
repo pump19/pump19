@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # vim:fenc=utf-8:ts=8:et:sw=4:sts=4:tw=79:ft=python
 
 """
@@ -37,12 +37,6 @@ def __get_cmd_config():
             "override": environ.get("PUMP19_CMD_OVERRIDE")}
 
 
-def __get_rss_config():
-    """Get a configuration dictionary for a LRRFeedParser instance."""
-
-    return {"delay": int(environ.get("PUMP19_RSS_DELAY", 300))}
-
-
 def get_config(component):
     """
     Get a configuration dictionary for a specific component.
@@ -53,8 +47,6 @@ def get_config(component):
         return __get_irc_config()
     elif component == "cmd":
         return __get_cmd_config()
-    elif component == "rss":
-        return __get_rss_config()
 
     # we don't know that config
     raise KeyError("No such component: {0}".format(component))
