@@ -49,7 +49,7 @@ CMD_REGEX = {
     "codefall":
         re.compile("^(?:codefall|🎁)(?: (?P<limit>\d))?$"),
     "lrrmc":
-        re.compile("^lrrmc(?: (?P<server>\w+))?$"),
+        re.compile("^(?:lrrmc|⛏️)(?: (?P<server>\w+))?$"),
     "lastfm":
         re.compile("^(?:last\.fm|🎵) (?P<user>\w+)$", re.ASCII),
     "roll":
