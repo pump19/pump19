@@ -14,8 +14,10 @@ See the file LICENSE for copying permission.
 import asyncio
 import command
 import config
+import functools
 import logging
 import protocol
+import schedulrr
 import signal
 
 LOG_FORMAT = "{levelname}({name}): {message}"
@@ -31,16 +33,23 @@ def main():
     loop = client.loop
 
     cmdhdl_config = config.get_config("cmd")
-    # we don't need to remember this instance
-    command.CommandHandler(client, loop=loop, **cmdhdl_config)
+    cmdhdl = command.CommandHandler(client, loop=loop, **cmdhdl_config)
+
+    logger.info("Starting 18 Games and Counting Scheduler")
+    coro_18gac = functools.partial(
+            cmdhdl.handle_command_18gac, None, None, count=4)
+    sched_18gac = schedulrr.ScheduLRR(
+            "*/10 * * * *", coro_18gac, loop)
 
     def shutdown():
         logger.info("Shutdown signal received.")
+        sched_18gac.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
     logger.info("Running protocol activity.")
     client.start()
+    sched_18gac.start()
     loop.run_forever()
 
     # before we stop the event loop, make sure all tasks are done
