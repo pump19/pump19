@@ -39,7 +39,7 @@ def main():
     coro_18gac = functools.partial(
             cmdhdl.handle_command_18gac, None, None, count=4)
     sched_18gac = schedulrr.ScheduLRR(
-            "*/10 * * * *", coro_18gac, loop)
+            "0 8 * * thu", coro_18gac, loop)
 
     def shutdown():
         logger.info("Shutdown signal received.")
