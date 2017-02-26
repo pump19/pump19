@@ -208,10 +208,7 @@ class CommandHandler:
                       "followed by {1}.").format(
                               game18, ", ".join(game_msgs))
 
-        if target:
-            await self.client.privmsg(target, game18_msg)
-        else:
-            await self.client.announce(game18_msg)
+        await self.client.privmsg(target, game18_msg)
 
     @rate_limited
     async def handle_command_codefall(self, target, nick, *, limit=None):
