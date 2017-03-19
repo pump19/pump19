@@ -36,7 +36,7 @@ LRRMC_SERVERS = {
         "name": "LRR FTB Minecraft Server",
         "host": "ftb.lrrcraft.com",
         "port": 25565,
-        "info": "We're playing Feed The Beej Presents Direwolf20 1.10."
+        "info": "One up James on Feed The Beej Beyond."
     }
 }
 
