@@ -26,7 +26,7 @@ GAMES_TOP_URL = ("https://api.twitch.tv/kraken/games/top"
                  "?limit={limit}&offset={offset}")
 
 TWITCH_API_HEADERS = {
-    "Accept": "application/vnd.twitchtv.v3+json",
+    "Accept": "application/vnd.twitchtv.v5+json",
     "Client-ID": CLIENT_ID
 }
 
