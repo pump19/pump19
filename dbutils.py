@@ -64,6 +64,7 @@ async def get_18gac_history(limit=10, loop=None):
     with (await pool.cursor()) as cur:
         query = """SELECT game_id
                    FROM gac_history
+                   WHERE ignore = False
                    ORDER BY stream_date DESC
                    LIMIT %(limit)s;"""
         await cur.execute(query, {"limit": limit})
