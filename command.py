@@ -14,6 +14,7 @@ import aiomc
 import asyncio
 import dbutils
 import functools
+import itertools
 import locale
 import logging
 import random
@@ -45,7 +46,7 @@ CMD_REGEX = {
         re.compile("^latest"
                    "(?: (?P<feed>broadcast|highlight))?$"),
     "18gac":
-        re.compile("^(?:18gac|🎮)(?: (?P<count>\d))?$"),
+        re.compile("^(?:18gac|🎮)(?: (?P<extra>\d))?$"),
     "codefall":
         re.compile("^(?:codefall|🎁)(?: (?P<limit>\d))?$"),
     "lrrmc":
@@ -193,19 +194,25 @@ class CommandHandler:
             await self.client.privmsg(target, highlight_msg)
 
     @rate_limited
-    async def handle_command_18gac(self, target, nick, *, count=None):
+    async def handle_command_18gac(self, target, nick, *, extra=None):
         """
         Handle !18gac command.
         Post the 18th +n most watched games on Twitch.tv.
+        Filters out most recently streamed games.
         """
-        count = max(int(count), 1) if count else 2
-        games = await twitch.get_top_games(count + 1, 17, loop=self.loop)
-        game_msgs = ('"{0}" ({1})'.format(*game) for game in games)
+        extra = max(int(extra), 1) if extra else 2
+        history = await dbutils.get_18gac_history(26)
 
-        game18 = next(game_msgs, None)
-        game18_msg = ("{0} is the 18th most watched game, "
-                      "followed by {1}.").format(
-                              game18, ", ".join(game_msgs))
+        limit = 1 + extra + len(history)
+        games = await twitch.get_top_games(limit, 17, loop=self.loop)
+        games = enumerate(games, 18)
+        games = filter(lambda g: g[1][0] not in history, games)
+        games = itertools.islice(games, 1 + extra)
+
+        game_msgs = ('#{0}: "{2}"'.format(idx, *game) for idx, game in games)
+
+        game18_msg = "18th Game …and Counting: {0}.".format(
+                ", ".join(game_msgs))
 
         await self.client.privmsg(target, game18_msg)
 
