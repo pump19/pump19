@@ -178,15 +178,14 @@ class CommandHandler:
 
         # broadcasts are updated here
         if feed == "broadcast":
-            broadcast = await twitch.get_broadcasts(
-                    "loadingreadyrun", 1, loop=self.loop)
+            broadcast = await twitch.get_broadcasts(27132299, 1)
             video = next(broadcast, None)
 
             broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*video)
 
             await self.client.privmsg(target, broadcast_msg)
         elif feed == "highlight":
-            highlight = await twitch.get_highlights("loadingreadyrun", 1)
+            highlight = await twitch.get_highlights(27132299, 1)
             video = next(highlight, None)
 
             highlight_msg = "Latest Highlight: {0} ({1}) [{2}]".format(*video)
