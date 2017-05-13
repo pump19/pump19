@@ -78,8 +78,8 @@ async def get_highlights(stream, limit, loop=None):
 async def get_top_games(limit, offset, loop=None):
     """
     Request the games currently viewed the most.
-    Returns an iterable of games, each entry being a tuple of name and number
-    of viewers.
+    Returns an iterable of games, each entry being a tuple of id, name and
+    number of viewers.
     """
     logger = logging.getLogger("twitch")
     logger.info("Requesting {limit} game(s) starting from #{offset}.".format(
@@ -94,7 +94,7 @@ async def get_top_games(limit, offset, loop=None):
     logger.debug("Retrieved top {nof} games starting from #{offset}.".format(
         nof=len(games["top"]), offset=offset))
 
-    return ((entry["game"]["name"], entry["viewers"])
+    return ((entry["game"]["_id"], entry["game"]["name"], entry["viewers"])
             for entry in games["top"])
 
 
