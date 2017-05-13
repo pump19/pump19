@@ -17,10 +17,8 @@ import os
 
 CLIENT_ID = os.environ["TWITCH_CLIENT_ID"]
 CHATTERS_URL = "http://tmi.twitch.tv/group/user/{stream}/chatters"
-BROADCAST_URL = ("https://api.twitch.tv/kraken/channels/"
-                 "{stream}/videos?limit={limit}&broadcasts=true")
-HIGHLIGHT_URL = ("https://api.twitch.tv/kraken/channels/"
-                 "{stream}/videos?limit={limit}&broadcasts=false")
+VIDEOS_URL = ("https://api.twitch.tv/kraken/channels/"
+              "{stream}/videos?limit={limit}&broadcast_type={bc_type}")
 STREAM_URL = "https://api.twitch.tv/kraken/streams/loadingreadyrun"
 GAMES_TOP_URL = ("https://api.twitch.tv/kraken/games/top"
                  "?limit={limit}&offset={offset}")
@@ -41,10 +39,13 @@ async def get_broadcasts(stream, limit, loop=None):
     logger.info("Requesting {limit} broadcast(s) for {stream}.".format(
         stream=stream, limit=limit))
 
-    bc_url = BROADCAST_URL.format(stream=stream, limit=limit)
-    bc_req = await aiohttp.request(
-        "get", bc_url, headers=TWITCH_API_HEADERS, loop=loop)
-    broadcasts = await bc_req.json(encoding="utf-8")
+    bc_url = VIDEOS_URL.format(stream=stream, limit=limit, bc_type="archive")
+    with aiohttp.ClientSession(
+            read_timeout=30, headers=TWITCH_API_HEADERS,
+            loop=loop) as client:
+
+        bc_req = await client.get(bc_url)
+        broadcasts = await bc_req.json(encoding="utf-8")
 
     logger.debug("Retrieved {nof} broadcasts for {stream}.".format(
         nof=len(broadcasts["videos"]), stream=stream))
@@ -63,10 +64,13 @@ async def get_highlights(stream, limit, loop=None):
     logger.info("Requesting {limit} highlight(s) for {stream}.".format(
         stream=stream, limit=limit))
 
-    hl_url = HIGHLIGHT_URL.format(stream=stream, limit=limit)
-    hl_req = await aiohttp.request(
-        "get", hl_url, headers=TWITCH_API_HEADERS, loop=loop)
-    highlights = await hl_req.json(encoding="utf-8")
+    hl_url = VIDEOS_URL.format(stream=stream, limit=limit, bc_type="highlight")
+    with aiohttp.ClientSession(
+            read_timeout=30, headers=TWITCH_API_HEADERS,
+            loop=loop) as client:
+
+        hl_req = await client.get(hl_url)
+        highlights = await hl_req.json(encoding="utf-8")
 
     logger.debug("Retrieved {nof} highlights for {stream}.".format(
         nof=len(highlights["videos"]), stream=stream))
@@ -86,10 +90,12 @@ async def get_top_games(limit, offset, loop=None):
         limit=limit, offset=offset))
 
     gt_url = GAMES_TOP_URL.format(limit=limit, offset=offset)
-    gt_req = await aiohttp.request(
-        "get", gt_url, headers=TWITCH_API_HEADERS, loop=loop)
+    with aiohttp.ClientSession(
+            read_timeout=30, headers=TWITCH_API_HEADERS,
+            loop=loop) as client:
 
-    games = await gt_req.json(encoding="utf-8")
+        gt_req = await client.get(gt_url)
+        games = await gt_req.json(encoding="utf-8")
 
     logger.debug("Retrieved top {nof} games starting from #{offset}.".format(
         nof=len(games["top"]), offset=offset))
