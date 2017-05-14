@@ -209,10 +209,10 @@ class CommandHandler:
         games = filter(lambda g: g[1][0] not in history, games)
         games = itertools.islice(games, 1 + extra)
 
-        game_msgs = ('#{0}: "{2}"'.format(idx, *game) for idx, game in games)
+        game_msgs = ('#{0}: {2}'.format(idx, *game) for idx, game in games)
 
         game18_msg = "18th Game …and Counting: {0}.".format(
-                ", ".join(game_msgs))
+                " | ".join(game_msgs))
 
         await self.client.privmsg(target, game18_msg)
 
