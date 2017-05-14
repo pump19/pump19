@@ -58,7 +58,7 @@ async def get_codefall_entries(user_name, limit=1, loop=None):
             return entries
 
 
-async def get_18gac_history(limit=10, loop=None):
+async def get_18gac_history(limit=None, loop=None):
     """Get a list of games recently streamed on 18GAC."""
     pool = await get_pool(loop)
     with (await pool.cursor()) as cur:

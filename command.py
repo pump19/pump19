@@ -201,7 +201,7 @@ class CommandHandler:
         Filters out most recently streamed games.
         """
         extra = max(int(extra), 1) if extra else 2
-        history = await dbutils.get_18gac_history(26)
+        history = await dbutils.get_18gac_history()
 
         limit = 1 + extra + len(history)
         games = await twitch.get_top_games(limit, 17, loop=self.loop)
