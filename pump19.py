@@ -37,7 +37,7 @@ def main():
 
     logger.info("Starting 18 Games and Counting Scheduler")
     coro_18gac = functools.partial(
-            cmdhdl.handle_command_18gac, "#loadingreadyrun", None, count=4)
+            cmdhdl.handle_command_18gac, "#loadingreadyrun", None, extra=4)
     sched_18gac = schedulrr.ScheduLRR(
             "0 8 * * thu", coro_18gac, loop)
 
