@@ -200,14 +200,16 @@ class CommandHandler:
         Post the 18th +n most watched games on Twitch.tv.
         Filters out most recently streamed games.
         """
-        extra = max(int(extra), 1) if extra else 2
+        extra = max(int(extra), 1) if extra else 3
         history = await dbutils.get_18gac_history()
 
-        limit = 1 + extra + len(history)
+        limit = extra + len(history)
         games = await twitch.get_top_games(limit, 17, loop=self.loop)
         games = enumerate(games, 18)
+        game18 = next(games)
         games = filter(lambda g: g[1][0] not in history, games)
-        games = itertools.islice(games, 1 + extra)
+        games = itertools.islice(games, extra)
+        games = itertools.chain([game18], games)
 
         game_msgs = ('#{0}: {2}'.format(idx, *game) for idx, game in games)
 
