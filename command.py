@@ -42,9 +42,10 @@ LRRMC_SERVERS = {
 }
 
 CMD_REGEX = {
-    "latest":
-        re.compile("^latest"
-                   "(?: (?P<feed>broadcast|highlight))?$"),
+    "vod":
+        re.compile("^vod$"),
+    "clip":
+        re.compile("^clip$"),
     "18gac":
         re.compile("^(?:18gac|🎮)(?: (?P<extra>\d))?$"),
     "codefall":
@@ -170,28 +171,30 @@ class CommandHandler:
             await handle_command(target, nick)
 
     @rate_limited
-    async def handle_command_latest(self, target, nick, *, feed=None):
+    async def handle_command_vod(self, target, nick):
         """
-        Handle !latest [broadcast|highlight] command.
-        Post the most recent Twitch.tv broadcast or hightlight.
+        Handle !vod command.
+        Post the most recent Twitch.tv broadcast.
         """
-        feed = feed or "broadcast"
+        broadcasts = await twitch.get_broadcasts(27132299, 1)
+        vod = next(broadcasts, None)
 
-        # broadcasts are updated here
-        if feed == "broadcast":
-            broadcast = await twitch.get_broadcasts(27132299, 1)
-            video = next(broadcast, None)
+        broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*vod)
 
-            broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*video)
+        await self.client.privmsg(target, broadcast_msg)
 
-            await self.client.privmsg(target, broadcast_msg)
-        elif feed == "highlight":
-            highlight = await twitch.get_highlights(27132299, 1)
-            video = next(highlight, None)
+    @rate_limited
+    async def handle_command_clip(self, target, nick):
+        """
+        Handle !clip command.
+        Post the most viewed Twitch.tv clip.
+        """
+        clips = await twitch.get_top_clips("loadingreadyrun", 1)
+        clip = next(clips, None)
 
-            highlight_msg = "Latest Highlight: {0} ({1}) [{2}]".format(*video)
-
-            await self.client.privmsg(target, highlight_msg)
+        clip_msg = "Top Clip: {0} (https://clips.twitch.tv/{1}) [{2}]".format(
+                *clip)
+        await self.client.privmsg(target, clip_msg)
 
     @rate_limited
     async def handle_command_18gac(self, target, nick, *, extra=None):
@@ -242,7 +245,7 @@ class CommandHandler:
         await self.client.privmsg(target, codefall_msg)
 
     @rate_limited
-    async def handle_command_lrrmc(self, target, nick, server="vanilla"):
+    async def handle_command_lrrmc(self, target, nick, *, server="vanilla"):
         """
         Handle !lrrmc command.
         Query and post the status of the LRR Minecraft server.
@@ -311,7 +314,8 @@ class CommandHandler:
         await self.client.privmsg(target, lastfm_msg)
 
     @rate_limited
-    async def handle_command_roll(self, target, nick, count=None, sides=None):
+    async def handle_command_roll(self, target, nick, *,
+                                  count=None, sides=None):
         """
         Handle !roll [[<n>]d<m>] command.
         Simulate n rolls of m sided dice and print the result.
