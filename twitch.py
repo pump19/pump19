@@ -16,10 +16,10 @@ import logging
 import os
 
 CLIENT_ID = os.environ["TWITCH_CLIENT_ID"]
-CHATTERS_URL = "http://tmi.twitch.tv/group/user/{stream}/chatters"
 VIDEOS_URL = ("https://api.twitch.tv/kraken/channels/"
-              "{stream}/videos?limit={limit}&broadcast_type={bc_type}")
-STREAM_URL = "https://api.twitch.tv/kraken/streams/loadingreadyrun"
+              "{channel}/videos?limit={limit}&broadcast_type=archive")
+CLIPS_URL = ("https://api.twitch.tv/kraken/clips/top"
+             "?channel={channel}&limit={limit}")
 GAMES_TOP_URL = ("https://api.twitch.tv/kraken/games/top"
                  "?limit={limit}&offset={offset}")
 
@@ -29,17 +29,17 @@ TWITCH_API_HEADERS = {
 }
 
 
-async def get_broadcasts(stream, limit, loop=None):
+async def get_broadcasts(channel, limit, loop=None):
     """
-    Request the latest n broadcasts for a given stream.
+    Request the latest n broadcasts for a given channel.
     Returns an iterable of broadcasts, each entry being a tuple of title, url
     and date.
     """
     logger = logging.getLogger("twitch")
-    logger.info("Requesting {limit} broadcast(s) for {stream}.".format(
-        stream=stream, limit=limit))
+    logger.info("Requesting {limit} broadcast(s) for {channel}.".format(
+        channel=channel, limit=limit))
 
-    bc_url = VIDEOS_URL.format(stream=stream, limit=limit, bc_type="archive")
+    bc_url = VIDEOS_URL.format(channel=channel, limit=limit)
     with aiohttp.ClientSession(
             read_timeout=30, headers=TWITCH_API_HEADERS,
             loop=loop) as client:
@@ -47,36 +47,37 @@ async def get_broadcasts(stream, limit, loop=None):
         bc_req = await client.get(bc_url)
         broadcasts = await bc_req.json(encoding="utf-8")
 
-    logger.debug("Retrieved {nof} broadcasts for {stream}.".format(
-        nof=len(broadcasts["videos"]), stream=stream))
+    logger.debug("Retrieved {nof} broadcasts for {channel}.".format(
+        nof=len(broadcasts["videos"]), channel=channel))
 
     return ((video["title"], video["url"], video["recorded_at"])
             for video in broadcasts["videos"])
 
 
-async def get_highlights(stream, limit, loop=None):
+async def get_top_clips(channel, limit, loop=None):
     """
-    Request the latest n highlights for a given stream.
-    Returns an iterable of highlights, each entry being a tuple of title, url
-    and date.
+    Request the top n clips for a given channel.
     """
     logger = logging.getLogger("twitch")
-    logger.info("Requesting {limit} highlight(s) for {stream}.".format(
-        stream=stream, limit=limit))
+    logger.info("Requesting {limit} clip(s) for {channel}.".format(
+        channel=channel, limit=limit))
 
-    hl_url = VIDEOS_URL.format(stream=stream, limit=limit, bc_type="highlight")
+    tc_url = CLIPS_URL.format(channel=channel, limit=limit)
+    logger.info(tc_url)
     with aiohttp.ClientSession(
             read_timeout=30, headers=TWITCH_API_HEADERS,
             loop=loop) as client:
 
-        hl_req = await client.get(hl_url)
-        highlights = await hl_req.json(encoding="utf-8")
+        tc_req = await client.get(tc_url)
+        logger.info(tc_req)
+        clips = await tc_req.json(encoding="utf-8")
+        logger.info(clips)
 
-    logger.debug("Retrieved {nof} highlights for {stream}.".format(
-        nof=len(highlights["videos"]), stream=stream))
+    logger.debug("Retrieved {nof} clips for {channel}.".format(
+        nof=len(clips["clips"]), channel=channel))
 
-    return ((video["title"], video["url"], video["recorded_at"])
-            for video in highlights["videos"])
+    return ((clip["title"], clip["slug"], clip["created_at"])
+            for clip in clips["clips"])
 
 
 async def get_top_games(limit, offset, loop=None):
