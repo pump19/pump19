@@ -179,7 +179,7 @@ class CommandHandler:
         broadcasts = await twitch.get_broadcasts(27132299, 1)
         vod = next(broadcasts, None)
 
-        broadcast_msg = "Latest Broadcast: {0} ({1}) [{2}]".format(*vod)
+        broadcast_msg = "Latest Broadcast: {0} [{2}] | {1}".format(*vod)
 
         await self.client.privmsg(target, broadcast_msg)
 
@@ -192,7 +192,7 @@ class CommandHandler:
         clips = await twitch.get_top_clips("loadingreadyrun", 1)
         clip = next(clips, None)
 
-        clip_msg = "Top Clip: {0} (https://clips.twitch.tv/{1}) [{2}]".format(
+        clip_msg = "Top Clip: {0} [{2}] | https://clips.twitch.tv/{1}".format(
                 *clip)
         await self.client.privmsg(target, clip_msg)
 
