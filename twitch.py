@@ -63,15 +63,12 @@ async def get_top_clips(channel, limit, loop=None):
         channel=channel, limit=limit))
 
     tc_url = CLIPS_URL.format(channel=channel, limit=limit)
-    logger.info(tc_url)
     with aiohttp.ClientSession(
             read_timeout=30, headers=TWITCH_API_HEADERS,
             loop=loop) as client:
 
         tc_req = await client.get(tc_url)
-        logger.info(tc_req)
         clips = await tc_req.json(encoding="utf-8")
-        logger.info(clips)
 
     logger.debug("Retrieved {nof} clips for {channel}.".format(
         nof=len(clips["clips"]), channel=channel))
