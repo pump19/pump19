@@ -211,7 +211,7 @@ class CommandHandler:
         games = enumerate(games, 18)
         game18 = next(games)
         if game18[1][0] in history:
-            game18 = (game18[0], (game18[1][0], game18[1][1] + " 🔁"))
+            game18 = (game18[0], (game18[1][0], game18[1][1] + " \u267B"))
         games = filter(lambda g: g[1][0] not in history, games)
         games = itertools.islice(games, extra)
         games = itertools.chain([game18], games)
