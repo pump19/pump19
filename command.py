@@ -27,17 +27,23 @@ CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
 LRRMC_SERVERS = {
     "vanilla": {
-        "name": "LRR Vanilla Minecraft Server",
+        "name": "the LRR Vanilla Minecraft Server",
         "host": "minecraft.darkmorford.net",
         "port": 25565,
         "info": "Check http://minecraft.darkmorford.net:8123/ "
                 "for the dynamic map."
     },
     "ftb": {
-        "name": "LRR FTB Minecraft Server",
+        "name": "the LRR FTB Minecraft Server",
         "host": "ftb.lrrcraft.com",
         "port": 25565,
         "info": "One up James on Feed The Beej Beyond."
+    },
+    "aoe": {
+        "name": "Corianin's Age of Engineering",
+        "host": "digger.lessqq.net",
+        "port": 25565,
+        "info": "Craft your way through the ages in this challenging modpack."
     }
 }
 
@@ -263,7 +269,7 @@ class CommandHandler:
         except asyncio.TimeoutError:
             status = None
 
-        base_msg = ("Join the {name} on {host}:{port}! {info} "
+        base_msg = ("Join {name} on {host}:{port}! {info} "
                     "Current Status: {status}")
 
         if not status:
