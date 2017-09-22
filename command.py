@@ -34,10 +34,16 @@ LRRMC_SERVERS = {
                 "for the dynamic map."
     },
     "ftb": {
-        "name": "the LRR FTB Minecraft Server",
+        "name": "the LRR Modded Minecraft Server",
         "host": "ftb.lrrcraft.com",
         "port": 25565,
-        "info": "One up James on Feed The Beej Beyond."
+        "info": "One up James on SnorshCraft."
+    },
+    "snorsh": {
+        "name": "the LRR Modded Minecraft Server",
+        "host": "ftb.lrrcraft.com",
+        "port": 25565,
+        "info": "One up James on SnorshCraft."
     },
     "aoe": {
         "name": "Corianin's Age of Engineering",
