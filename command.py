@@ -35,13 +35,13 @@ LRRMC_SERVERS = {
     },
     "ftb": {
         "name": "the LRR Modded Minecraft Server",
-        "host": "ftb.lrrcraft.com",
+        "host": "ftb.darkmorford.net",
         "port": 25565,
         "info": "One up James on SnorshCraft."
     },
     "snorsh": {
         "name": "the LRR Modded Minecraft Server",
-        "host": "ftb.lrrcraft.com",
+        "host": "ftb.darkmorford.net",
         "port": 25565,
         "info": "One up James on SnorshCraft."
     },
