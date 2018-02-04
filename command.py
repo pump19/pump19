@@ -17,7 +17,6 @@ import functools
 import itertools
 import locale
 import logging
-import random
 import re
 import songs
 import twitch
@@ -330,50 +329,9 @@ class CommandHandler:
     @rate_limited
     async def handle_command_roll(self, target, nick, *,
                                   count=None, sides=None):
-        """
-        Handle !roll [[<n>]d<m>] command.
-        Simulate n rolls of m sided dice and print the result.
-        """
-        count = int(count) if count else 1
-        sides = int(sides) if sides else 20
-
-        # nothing to do
-        if count < 1:
-            return
-
-        if count > 10:
-            out_of_dice_msg = "only has 10 dice"
-            await self.client.describe(target, out_of_dice_msg)
-            return
-
-        if sides is 0:
-            no_sides_msg = "slowly backs away from the singularity."
-            await self.client.describe(target, no_sides_msg)
-            return
-
-        if sides > 100:
-            too_many_sides_msg = "doesn't have one of those."
-            await self.client.describe(target, too_many_sides_msg)
-            return
-
-        if sides is 1:
-            roll_msg = "Rolling {0}... got {1}. Duh.".format(
-                "a marble" if count == 1 else "some marbles", count)
-        elif sides is 2:
-            coins = (random.choice(("Heads", "Tails")) for _ in range(count))
-            numerus = "a coin" if count == 1 else "{0} coins".format(count)
-            roll_msg = "Tossing {0}... got {1}.".format(
-                numerus, ", ".join(coins))
-        else:
-            rolls = [random.randint(1, sides) for _ in range(count)]
-            total = sum(rolls)
-            numerus = ("a d{0}".format(sides) if count == 1 else
-                       "{0} d{1}s".format(count, sides))
-            roll_msg = "Rolling {0}... got {1}{2}.".format(
-                numerus, ", ".join(map(str, rolls)),
-                " => {0}".format(total) if count > 1 else "")
-
-        await self.client.privmsg(target, roll_msg)
+        await self.client.privmsg(
+                target,
+                "THIS is why we can't have nice things!")
 
     @rate_limited
     async def handle_command_bingo(self, target, nick):
