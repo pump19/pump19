@@ -7,17 +7,15 @@ pump19.py
 The Pump19 IRC Golem entry point.
 It sets up logging and starts up the IRC client.
 
-Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
+Copyright (c) 2018 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 
 import asyncio
 import command
 import config
-import functools
 import logging
 import protocol
-import schedulrr
 import signal
 
 LOG_FORMAT = "{levelname}({name}): {message}"
@@ -33,23 +31,16 @@ def main():
     loop = client.loop
 
     cmdhdl_config = config.get_config("cmd")
-    cmdhdl = command.CommandHandler(client, loop=loop, **cmdhdl_config)
-
-    logger.info("Starting 18 Games and Counting Scheduler")
-    coro_18gac = functools.partial(
-            cmdhdl.handle_command_18gac, "#loadingreadyrun", None, extra=4)
-    sched_18gac = schedulrr.ScheduLRR(
-            "0 8 * * thu", coro_18gac, loop)
+    # we don't need to remember this instance
+    command.CommandHandler(client, loop=loop, **cmdhdl_config)
 
     def shutdown():
         logger.info("Shutdown signal received.")
-        sched_18gac.stop()
         client.shutdown()
     loop.add_signal_handler(signal.SIGTERM, shutdown)
 
     logger.info("Running protocol activity.")
     client.start()
-    sched_18gac.start()
     loop.run_forever()
 
     # before we stop the event loop, make sure all tasks are done

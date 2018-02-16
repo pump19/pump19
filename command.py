@@ -6,7 +6,7 @@ command.py
 
 Handle commands received on IRC.
 
-Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
+Copyright (c) 2018 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 
@@ -14,7 +14,6 @@ import aiomc
 import asyncio
 import dbutils
 import functools
-import itertools
 import locale
 import logging
 import re
@@ -32,23 +31,11 @@ LRRMC_SERVERS = {
         "info": "Check http://minecraft.darkmorford.net:8123/ "
                 "for the dynamic map."
     },
-    "ftb": {
-        "name": "the LRR Modded Minecraft Server",
-        "host": "ftb.darkmorford.net",
-        "port": 25565,
-        "info": "One up James on SnorshCraft."
-    },
     "snorsh": {
         "name": "the LRR Modded Minecraft Server",
         "host": "ftb.darkmorford.net",
         "port": 25565,
         "info": "One up James on SnorshCraft."
-    },
-    "aoe": {
-        "name": "Corianin's Age of Engineering",
-        "host": "digger.lessqq.net",
-        "port": 25565,
-        "info": "Craft your way through the ages in this challenging modpack."
     }
 }
 
@@ -57,8 +44,6 @@ CMD_REGEX = {
         re.compile("^vod$"),
     "clip":
         re.compile("^clip$"),
-    "18gac":
-        re.compile("^(?:18gac|🎮)(?: (?P<extra>\d))?$"),
     "codefall":
         re.compile("^(?:codefall|🎁)(?: (?P<limit>\d))?$"),
     "lrrmc":
@@ -206,33 +191,6 @@ class CommandHandler:
         clip_msg = "Top Clip: {0} [{2}] | https://clips.twitch.tv/{1}".format(
                 *clip)
         await self.client.privmsg(target, clip_msg)
-
-    @rate_limited
-    async def handle_command_18gac(self, target, nick, *, extra=None):
-        """
-        Handle !18gac command.
-        Post the 18th +n most watched games on Twitch.tv.
-        Filters out most recently streamed games.
-        """
-        extra = max(int(extra), 1) if extra else 3
-        history = await dbutils.get_18gac_history()
-
-        limit = extra + len(history)
-        games = await twitch.get_top_games(limit, 17, loop=self.loop)
-        games = enumerate(games, 18)
-        game18 = next(games)
-        if game18[1][0] in history:
-            game18 = (game18[0], (game18[1][0], game18[1][1] + " \u267B"))
-        games = filter(lambda g: g[1][0] not in history, games)
-        games = itertools.islice(games, extra)
-        games = itertools.chain([game18], games)
-
-        game_msgs = ('#{0}: {2}'.format(idx, *game) for idx, game in games)
-
-        game18_msg = "18th Game …and Counting: {0}.".format(
-                " | ".join(game_msgs))
-
-        await self.client.privmsg(target, game18_msg)
 
     @rate_limited
     async def handle_command_codefall(self, target, nick, *, limit=None):

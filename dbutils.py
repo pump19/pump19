@@ -6,7 +6,7 @@ dbutils.py
 
 Various database driven utility functions.
 
-Copyright (c) 2015 Twisted Pear <tp at pump19 dot eu>
+Copyright (c) 2018 Twisted Pear <tp at pump19 dot eu>
 See the file LICENSE for copying permission.
 """
 
@@ -56,22 +56,3 @@ async def get_codefall_entries(user_name, limit=1, loop=None):
                 secret_url = CODEFALL_SHOW_URL.format(secret=secret)
                 entries.append((secret_url, description, code_type))
             return entries
-
-
-async def get_18gac_history(limit=None, loop=None):
-    """Get a list of games recently streamed on 18GAC."""
-    pool = await get_pool(loop)
-    with (await pool.cursor()) as cur:
-        query = """SELECT game_id
-                   FROM gac_history
-                   WHERE ignore = False
-                   ORDER BY stream_date DESC
-                   LIMIT %(limit)s;"""
-        await cur.execute(query, {"limit": limit})
-
-        if not cur.rowcount:
-            return list()
-        else:
-            history = await cur.fetchall()
-            # unpack list of tuples returned by fetchall
-            return [h for h, in history]
