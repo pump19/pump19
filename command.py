@@ -12,7 +12,6 @@ See the file LICENSE for copying permission.
 
 import aiomc
 import asyncio
-import dbutils
 import functools
 import locale
 import logging
@@ -21,7 +20,6 @@ import songs
 import twitch
 
 BINGO_URL = "https://pump19.eu/bingo"
-CODEFALL_URL = "https://pump19.eu/codefall"
 COMMAND_URL = "https://pump19.eu/commands"
 LRRMC_SERVERS = {
     "vanilla": {
@@ -44,8 +42,6 @@ CMD_REGEX = {
         re.compile("^vod$"),
     "clip":
         re.compile("^clip$"),
-    "codefall":
-        re.compile("^(?:codefall|🎁)(?: (?P<limit>\d))?$"),
     "lrrmc":
         re.compile("^(?:lrrmc|⛏️)(?: (?P<server>\w+))?$"),
     "lastfm":
@@ -191,29 +187,6 @@ class CommandHandler:
         clip_msg = "Top Clip: {0} [{2}] | https://clips.twitch.tv/{1}".format(
                 *clip)
         await self.client.privmsg(target, clip_msg)
-
-    @rate_limited
-    async def handle_command_codefall(self, target, nick, *, limit=None):
-        """
-        Handle !codefall [limit] command.
-        If available, post a single unclaimed codefall URL.
-        """
-        limit = min(int(limit), 3) if limit else 1
-
-        entries = await dbutils.get_codefall_entries(
-                nick, limit, loop=self.loop)
-
-        if not entries:
-            no_codefall_msg = ("Could not find any unclaimed codes. "
-                               "You can add new entries at {url}".format(
-                                   url=CODEFALL_URL))
-            await self.client.privmsg(target, no_codefall_msg)
-            return
-
-        entry_msgs = ("{1} ({2}) {0}".format(*entry) for entry in entries)
-        codefall_msg = "Codefall | {0}".format(" | ".join(entry_msgs))
-
-        await self.client.privmsg(target, codefall_msg)
 
     @rate_limited
     async def handle_command_lrrmc(self, target, nick, *, server="vanilla"):
